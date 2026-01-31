@@ -23,11 +23,11 @@ services:
       - GENERIC_TIMEZONE=Europe/Berlin
       
       # ===== Database Configuration (Optional: Use Supabase or separate Postgres) =====
-      - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=${N8N_DB_HOST:-localhost}
-      - DB_POSTGRESDB_DATABASE=${N8N_DB_NAME:-n8n}
-      - DB_POSTGRESDB_USER=${N8N_DB_USER:-n8n}
-      - DB_POSTGRESDB_PASSWORD=${N8N_DB_PASSWORD}
+      # - DB_TYPE=postgresdb
+      # - DB_POSTGRESDB_HOST=${N8N_DB_HOST:-localhost}
+      # - DB_POSTGRESDB_DATABASE=${N8N_DB_NAME:-n8n}
+      # - DB_POSTGRESDB_USER=${N8N_DB_USER:-n8n}
+      # - DB_POSTGRESDB_PASSWORD=${N8N_DB_PASSWORD}
       
       # ===== Supabase Connection =====
       - SUPABASE_URL=${SUPABASE_URL}
