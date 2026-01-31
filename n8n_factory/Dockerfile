@@ -2,9 +2,16 @@ FROM n8nio/n8n:latest-debian
 
 USER root
 
+
+# 0. Fix for Debian Buster EOL (Archive Repos)
+# n8n:latest-debian uses Buster which is EOL, so we must point to archive.debian.org
+RUN echo "deb http://archive.debian.org/debian buster main" > /etc/apt/sources.list && \
+    echo "deb http://archive.debian.org/debian-security buster/updates main" >> /etc/apt/sources.list && \
+    echo "deb http://archive.debian.org/debian buster-updates main" >> /etc/apt/sources.list && \
+    apt-get -o Acquire::Check-Valid-Until=false update
+
 # 1. Install System Dependencies (FFmpeg, Graphics Libraries)
-# n8n:latest is Debian-based, so we use apt-get instead of apk.
-RUN apt-get update && apt-get install -y \
+RUN apt-get install -y --allow-unauthenticated \
     ffmpeg \
     python3 \
     python3-pip \
