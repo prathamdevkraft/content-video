@@ -34,4 +34,6 @@ RUN pip3 install edge-tts tiktok-uploader
 
 WORKDIR /data
 
-USER node
+# Switch back to node user? No, let the entrypoint handle it.
+# The standard n8n entrypoint expects to run as root initially to fix permissions.
+# USER node
