@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  n8n:
+    build: ./n8n_factory
+    container_name: taxfix-n8n-factory
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Europe/Berlin
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n_factory/local_files:/data/files  # Shared volume for generated videos
+
+  dashboard:
+    build: 
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: taxfix-compliance-dashboard
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+    volumes:
+      - ./dashboard:/app
+    depends_on:
+      - n8n
+
+volumes:
+  n8n_data:

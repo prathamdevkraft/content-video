@@ -1,0 +1,23 @@
+# Secrets
+.env
+.env.local
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Data & Logs
+n8n_factory/local_files/
+n8n_data/
+logs/
+
+# Documents (as requested)
+docs/
+*.pdf
+
+# Testing
+test_*.py
+
+# System
+.DS_Store
