@@ -1,0 +1,32 @@
+{
+    "name": "Taxfix_2_Production_Factory",
+    "nodes": [
+        {
+            "parameters": {},
+            "name": "Manual Trigger",
+            "type": "n8n-nodes-base.manualTrigger",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ],
+            "id": "manual-trigger"
+        },
+        {
+            "parameters": {
+                "content": "## Taxfix Production Factory (Phase 1)\n\nThis workflow implements the 3-Step Video Generation:\n\n1. **Get Job**: Fetch `PENDING_GENERATION` from `content_queue`.\n2. **Generate**: OpenAI (Script) -> Edge-TTS (Audio) -> Editly (Video).\n3. **Update**: Set `status` to `PENDING_REVIEW`.\n\n**Setup Steps:**\n1. Add Supabase Node to fetch data.\n2. Add OpenAI Node for scripting.\n3. Add Execute Command Node for `edge-tts`.\n4. Add Execute Command Node for `editly`.\n5. Add Supabase Node to update status.",
+                "height": 400,
+                "width": 500
+            },
+            "name": "Instructions",
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                100,
+                100
+            ],
+            "id": "sticky-note"
+        }
+    ],
+    "connections": {}
+}

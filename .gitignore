@@ -21,3 +21,4 @@ test_*.py
 
 # System
 .DS_Store
+*.pem
