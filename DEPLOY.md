@@ -1,39 +1,61 @@
-# Deployment Guide (Free/Demo Stacks)
+# Deployment Guide
 
-For a demo, **Railway** is the best option because it handles the Custom Docker Image (n8n + Editly) better than Vercel or Render's strict free tiers.
+## Recommended: AWS EC2 / VM Deployment
 
-## Option 1: Railway (Recommended for Backend)
+Since you have an AWS VM, this is the **most robust** option. It gives you full control over the resources needed for video rendering.
 
-1.  **Push to GitHub**:
-    *   Create a new repo on GitHub.
-    *   Push this entire `taxfix` folder to it.
+### 1. Prerequisites (On AWS Console)
+*   **Security Groups**: Ensure Inbound Rules open the following ports:
+    *   `22` (SSH)
+    *   `5678` (n8n)
+    *   `8501` (Dashboard)
+*   **OS**: Ubuntu 22.04 LTS (Recommended)
 
-2.  **Deploy on Railway**:
-    *   Go to [Railway.app](https://railway.app/).
-    *   Click "New Project" -> "Deploy from GitHub repo".
-    *   Select your `taxfix` repo.
+### 2. Setup Server
+SSH into your VM and install Docker & Docker Compose:
 
-3.  **Configure Variables**:
-    *   Railway will detect the Dockerfile.
-    *   Go to "Variables" and paste the contents of your `.env` file (Supabase Keys, OpenAI Key).
+```bash
+# Update and install Docker
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
 
-4.  **Resource Warning**:
-    *   Video rendering (Editly) is memory intensive.
-    *   Railway's Trial Plan gives $5 credit. This is enough for the demo, but if the container crashes during render, you may need to upgrade to the Developer plan ($5/mo) to get more RAM.
+echo \
+  "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-## Option 2: Frontend (Dashboard) on Streamlit Cloud
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
 
-1.  Go to [share.streamlit.io](https://share.streamlit.io/).
-2.  Connect your GitHub Account.
-3.  Select the `taxfix` repo.
-4.  Main file path: `dashboard/dashboard.py`.
-5.  **Advanced Settings** -> **Secrets**:
-    *   Paste your `.toml` format secrets:
-    ```toml
-    SUPABASE_URL = "your_url"
-    SUPABASE_KEY = "your_key"
+### 3. Deploy Application
+1.  **Clone the Repository**:
+    ```bash
+    git clone https://github.com/prathamdevkraft/content-video.git
+    cd content-video
     ```
-6.  Click **Deploy**. This is 100% Free forever.
 
-## Why not Vercel?
-Vercel is for "Serverless" functions. Our `n8n` factory is a long-running server process (it needs to stay alive to listen for webhooks and render large video files). Vercel would time out after 10 seconds.
+2.  **Configure Environment**:
+    Create the `.env` file manually (since it was gitignored):
+    ```bash
+    nano .env
+    ```
+    *Paste your Supabase URL, Key, service_role secret, and OpenAI Key here.*
+
+3.  **Start the Factory**:
+    ```bash
+    sudo docker compose up -d --build
+    ```
+
+### 4. Access
+*   **n8n**: `http://<YOUR_VM_IP>:5678`
+*   **Dashboard**: `http://<YOUR_VM_IP>:8501`
+
+---
+
+## Alternative: Railway (Managed)
+See `railway.json` for configuration if you prefer a managed PaaS.
+
