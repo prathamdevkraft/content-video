@@ -29,8 +29,8 @@ RUN apt-get install -y --allow-unauthenticated \
 RUN npm install -g editly --unsafe-perm=true
 
 # 3. Install Python libraries for TTS and Social Uploads
-# Note: Using --break-system-packages because Debian Bookworm manages python externally
-RUN pip3 install edge-tts tiktok-uploader --break-system-packages
+# Note: Debian Buster uses older pip, so no need for break-system-packages
+RUN pip3 install edge-tts tiktok-uploader
 
 WORKDIR /data
 
