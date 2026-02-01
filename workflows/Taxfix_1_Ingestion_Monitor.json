@@ -220,57 +220,6 @@
         },
         {
             "parameters": {
-                "operation": "getAll",
-                "tableId": "content_queue",
-                "limit": 1,
-                "filters": {
-                    "conditions": [
-                        {
-                            "key": "topic",
-                            "value": "={{ $json.topic }}",
-                            "operator": "eq"
-                        }
-                    ]
-                }
-            },
-            "name": "Check Duplicates",
-            "type": "n8n-nodes-base.supabase",
-            "typeVersion": 1,
-            "position": [
-                1350,
-                300
-            ],
-            "id": "check-dupes",
-            "alwaysOutputData": true,
-            "credentials": {
-                "supabaseApi": {
-                    "id": "supabase_api_creds",
-                    "name": "Supabase API"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "conditions": {
-                    "boolean": [
-                        {
-                            "value1": "={{ $items('Check Duplicates').length === 0 }}",
-                            "value2": true
-                        }
-                    ]
-                }
-            },
-            "name": "Is New?",
-            "type": "n8n-nodes-base.if",
-            "typeVersion": 1,
-            "position": [
-                1550,
-                300
-            ],
-            "id": "is-new"
-        },
-        {
-            "parameters": {
                 "operation": "create",
                 "tableId": "content_queue",
                 "columnsUi": {
@@ -302,7 +251,7 @@
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                1750,
+                1350,
                 300
             ],
             "id": "add-to-queue",
@@ -463,28 +412,6 @@
             ]
         },
         "Filter High Quality": {
-            "main": [
-                [
-                    {
-                        "node": "Check Duplicates",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Check Duplicates": {
-            "main": [
-                [
-                    {
-                        "node": "Is New?",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Is New?": {
             "main": [
                 [
                     {
