@@ -22,29 +22,85 @@
         },
         {
             "parameters": {
-                "url": "https://www.bundesfinanzministerium.de/Content/DE/RSS/Steuern/steuern.xml"
+                "url": "https://www.bundesfinanzministerium.de/Content/DE/RSS/Steuern/steuern.xml",
+                "options": {
+                    "response": {
+                        "response": {
+                            "responseFormat": "text"
+                        }
+                    }
+                },
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "User-Agent",
+                            "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                        }
+                    ]
+                }
             },
-            "name": "Fetch BMF News",
-            "type": "n8n-nodes-base.rssFeedRead",
-            "typeVersion": 1,
+            "name": "Fetch BMF (HTTP)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
             "position": [
                 450,
                 200
             ],
-            "id": "fetch-rss-bmf"
+            "id": "fetch-bmf-http"
         },
         {
             "parameters": {
-                "url": "https://www.finanztip.de/feed/"
+                "url": "https://www.finanztip.de/feed/",
+                "options": {
+                    "response": {
+                        "response": {
+                            "responseFormat": "text"
+                        }
+                    }
+                },
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "User-Agent",
+                            "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                        }
+                    ]
+                }
             },
-            "name": "Fetch Finanztip",
-            "type": "n8n-nodes-base.rssFeedRead",
-            "typeVersion": 1,
+            "name": "Fetch Finanztip (HTTP)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
             "position": [
                 450,
                 400
             ],
-            "id": "fetch-rss-finanztip"
+            "id": "fetch-finanztip-http"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Simple XML Regex Parser for BMF\n// Because built-in nodes struggle with strict XML\nconst xml = $json.data || '';\nconst items = [];\n// Extract items\nconst itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\nlet match;\nwhile ((match = itemRegex.exec(xml)) !== null) {\n  const content = match[1];\n  const title = (content.match(/<title>([\\s\\S]*?)<\\/title>/) || [])[1] || '';\n  const link = (content.match(/<link>([\\s\\S]*?)<\\/link>/) || [])[1] || '';\n  const desc = (content.match(/<description>([\\s\\S]*?)<\\/description>/) || [])[1] || '';\n  // Unescape CDATA if present\n  const cleanTitle = title.replace('<![CDATA[', '').replace(']]>', '').trim();\n  const cleanLink = link.trim();\n  const cleanDesc = desc.replace('<![CDATA[', '').replace(']]>', '').trim();\n\n  if (cleanTitle) {\n    items.push({\n      json: {\n        title: cleanTitle,\n        link: cleanLink,\n        contentSnippet: cleanDesc,\n        source: 'BMF'\n      }\n    });\n  }\n}\nreturn items;"
+            },
+            "name": "Parse BMF XML",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                600,
+                200
+            ],
+            "id": "parse-bmf"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Simple XML Regex Parser for Finanztip\nconst xml = $json.data || '';\nconst items = [];\nconst itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\nlet match;\nwhile ((match = itemRegex.exec(xml)) !== null) {\n  const content = match[1];\n  const title = (content.match(/<title>([\\s\\S]*?)<\\/title>/) || [])[1] || '';\n  const link = (content.match(/<link>([\\s\\S]*?)<\\/link>/) || [])[1] || '';\n  const desc = (content.match(/<description>([\\s\\S]*?)<\\/description>/) || [])[1] || '';\n  \n  const cleanTitle = title.replace('<![CDATA[', '').replace(']]>', '').trim();\n  const cleanLink = link.trim();\n  const cleanDesc = desc.replace('<![CDATA[', '').replace(']]>', '').trim();\n\n  if (cleanTitle) {\n    items.push({\n      json: {\n        title: cleanTitle,\n        link: cleanLink,\n        contentSnippet: cleanDesc,\n        source: 'Finanztip'\n      }\n    });\n  }\n}\nreturn items;"
+            },
+            "name": "Parse Finanztip XML",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                600,
+                400
+            ],
+            "id": "parse-finanztip"
         },
         {
             "parameters": {
@@ -54,7 +110,7 @@
             "type": "n8n-nodes-base.merge",
             "typeVersion": 1,
             "position": [
-                650,
+                750,
                 300
             ],
             "id": "merge-feeds"
@@ -81,7 +137,7 @@
             "type": "n8n-nodes-base.openAi",
             "typeVersion": 1,
             "position": [
-                850,
+                950,
                 300
             ],
             "id": "analyze-relevance",
@@ -114,7 +170,7 @@
             "type": "n8n-nodes-base.if",
             "typeVersion": 1,
             "position": [
-                1050,
+                1150,
                 300
             ],
             "id": "filter-quality"
@@ -138,7 +194,7 @@
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                1250,
+                1350,
                 300
             ],
             "id": "check-dupes",
@@ -165,7 +221,7 @@
             "type": "n8n-nodes-base.if",
             "typeVersion": 1,
             "position": [
-                1450,
+                1550,
                 300
             ],
             "id": "is-new"
@@ -203,7 +259,7 @@
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                1650,
+                1750,
                 300
             ],
             "id": "add-to-queue",
@@ -220,19 +276,41 @@
             "main": [
                 [
                     {
-                        "node": "Fetch BMF News",
+                        "node": "Fetch BMF (HTTP)",
                         "type": "main",
                         "index": 0
                     },
                     {
-                        "node": "Fetch Finanztip",
+                        "node": "Fetch Finanztip (HTTP)",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Fetch BMF News": {
+        "Fetch BMF (HTTP)": {
+            "main": [
+                [
+                    {
+                        "node": "Parse BMF XML",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch Finanztip (HTTP)": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Finanztip XML",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse BMF XML": {
             "main": [
                 [
                     {
@@ -243,7 +321,7 @@
                 ]
             ]
         },
-        "Fetch Finanztip": {
+        "Parse Finanztip XML": {
             "main": [
                 [
                     {
