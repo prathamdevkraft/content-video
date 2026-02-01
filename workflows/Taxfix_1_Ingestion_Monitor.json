@@ -22,16 +22,42 @@
         },
         {
             "parameters": {
-                "url": "https://www.bundesfinanzministerium.de/SiteGlobals/Functions/RSS/DE/Feed/RSS_Steuern.xml"
+                "url": "https://www.bundesfinanzministerium.de/Content/DE/RSS/Steuern/steuern.xml"
             },
             "name": "Fetch BMF News",
             "type": "n8n-nodes-base.rssFeedRead",
             "typeVersion": 1,
             "position": [
                 450,
+                200
+            ],
+            "id": "fetch-rss-bmf"
+        },
+        {
+            "parameters": {
+                "url": "https://www.finanztip.de/feed/"
+            },
+            "name": "Fetch Finanztip",
+            "type": "n8n-nodes-base.rssFeedRead",
+            "typeVersion": 1,
+            "position": [
+                450,
+                400
+            ],
+            "id": "fetch-rss-finanztip"
+        },
+        {
+            "parameters": {
+                "mode": "append"
+            },
+            "name": "Merge Feeds",
+            "type": "n8n-nodes-base.merge",
+            "typeVersion": 1,
+            "position": [
+                650,
                 300
             ],
-            "id": "fetch-rss"
+            "id": "merge-feeds"
         },
         {
             "parameters": {
@@ -41,7 +67,12 @@
                 "messages": {
                     "values": [
                         {
-                            "content": "Analyze this German tax news item for Taxfix (App for simple tax returns).\n\nTitle: {{ $json.title }}\nSnippet: {{ $json.contentSnippet }}\n\nIs this relevant for a young German employee/student (25-35yo)?\n- Ignore corporate tax, complex master data, or bureaucratic announcements.\n- Focus on: Deductions, Deadlines, New Benefits, Home Office, Crypto, ETF.\n\nReturn JSON:\n{\n  \"relevant\": true/false,\n  \"topic\": \"Short engaging topic title (keep in German)\",\n  \"confidence\": 0.9,\n  \"platform\": \"TikTok\"\n}"
+                            "role": "system",
+                            "content": "You are a tax content analyst for Taxfix (Target: Young employees/students 25-35).\nDecide if this news item is relevant for TikTok/Instagram content.\n\nRELEVANT: Deductions, Deadlines, Benefits, Home Office, Crypto, ETF, Student Tips.\nIRRELEVANT: Corporate tax, Bureaucracy, Stats, International Treaties.\n\nReturn JSON:\n{\n  \"relevant\": true/false,\n  \"topic\": \"Engaging German title\",\n  \"confidence\": 0.0-1.0,\n  \"platform\": \"TikTok\",\n  \"reasoning\": \"Why relevant?\"\n}"
+                        },
+                        {
+                            "role": "user",
+                            "content": "News Item:\nTitle: {{ $json.title }}\nSnippet: {{ $json.contentSnippet }}\nLink: {{ $json.link }}\nAnalyze:"
                         }
                     ]
                 }
@@ -50,7 +81,7 @@
             "type": "n8n-nodes-base.openAi",
             "typeVersion": 1,
             "position": [
-                650,
+                850,
                 300
             ],
             "id": "analyze-relevance",
@@ -69,17 +100,75 @@
                             "value1": "={{ $json.relevant }}",
                             "value2": true
                         }
+                    ],
+                    "number": [
+                        {
+                            "value1": "={{ $json.confidence }}",
+                            "operation": "larger",
+                            "value2": 0.7
+                        }
                     ]
                 }
             },
-            "name": "Filter Relevant",
+            "name": "Filter High Quality",
             "type": "n8n-nodes-base.if",
             "typeVersion": 1,
             "position": [
-                850,
+                1050,
                 300
             ],
-            "id": "filter-relevant"
+            "id": "filter-quality"
+        },
+        {
+            "parameters": {
+                "operation": "getAll",
+                "tableId": "content_queue",
+                "limit": 1,
+                "filters": {
+                    "conditions": [
+                        {
+                            "key": "topic",
+                            "value": "={{ $json.topic }}",
+                            "operator": "eq"
+                        }
+                    ]
+                }
+            },
+            "name": "Check Duplicates",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                1250,
+                300
+            ],
+            "id": "check-dupes",
+            "alwaysOutputData": true,
+            "credentials": {
+                "supabaseApi": {
+                    "id": "supabase_api_creds",
+                    "name": "Supabase API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $items('Check Duplicates').length === 0 }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "name": "Is New?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1450,
+                300
+            ],
+            "id": "is-new"
         },
         {
             "parameters": {
@@ -93,7 +182,7 @@
                         },
                         {
                             "fieldId": "source_url",
-                            "fieldValue": "={{ $('Fetch BMF News').item.json.link }}"
+                            "fieldValue": "={{ $('Analyze Relevance').item.json.link }}"
                         },
                         {
                             "fieldId": "status",
@@ -105,7 +194,7 @@
                         },
                         {
                             "fieldId": "compliance_score",
-                            "fieldValue": 0
+                            "fieldValue": "={{ $json.confidence }}"
                         }
                     ]
                 }
@@ -114,31 +203,16 @@
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                1050,
+                1650,
                 300
             ],
-            "id": "add-queue",
+            "id": "add-to-queue",
             "credentials": {
                 "supabaseApi": {
                     "id": "supabase_api_creds",
                     "name": "Supabase API"
                 }
             }
-        },
-        {
-            "parameters": {
-                "content": "## Real Data Ingestion (Phase 3)\n\n1. **Fetch BMF News**: Connects to the official German Ministry of Finance RSS.\n2. **Analyze Relevance**: OpenAI (GPT-4o) reads the news and decides if it's content-worthy.\n3. **Filter**: Only passes \"Relevant\" items.\n4. **Add to Queue**: Pushes real topics to the Factory.\n\n*To add other languages (UK/ES), simply add 'Fetch HMRC' or 'Fetch Agencia' nodes.*",
-                "height": 350,
-                "width": 550
-            },
-            "name": "Documentation",
-            "type": "n8n-nodes-base.stickyNote",
-            "typeVersion": 1,
-            "position": [
-                350,
-                100
-            ],
-            "id": "doc-note"
         }
     ],
     "connections": {
@@ -149,11 +223,38 @@
                         "node": "Fetch BMF News",
                         "type": "main",
                         "index": 0
+                    },
+                    {
+                        "node": "Fetch Finanztip",
+                        "type": "main",
+                        "index": 0
                     }
                 ]
             ]
         },
         "Fetch BMF News": {
+            "main": [
+                [
+                    {
+                        "node": "Merge Feeds",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch Finanztip": {
+            "main": [
+                [
+                    {
+                        "node": "Merge Feeds",
+                        "type": "main",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Merge Feeds": {
             "main": [
                 [
                     {
@@ -168,14 +269,36 @@
             "main": [
                 [
                     {
-                        "node": "Filter Relevant",
+                        "node": "Filter High Quality",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Filter Relevant": {
+        "Filter High Quality": {
+            "main": [
+                [
+                    {
+                        "node": "Check Duplicates",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Duplicates": {
+            "main": [
+                [
+                    {
+                        "node": "Is New?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is New?": {
             "main": [
                 [
                     {
