@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import axios from 'axios';
 import { Database, FileText, CheckCircle, AlertCircle, Play, Server, Clock, Search } from 'lucide-react';
 import NavigationButton from './components/NavigationButton';
+import RefreshButton from './components/RefreshButton';
 
 const AppWrapper = styled.div`
   min-height: 100vh;
@@ -299,12 +300,7 @@ function App() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
               <Description>Real-time view of generated video scripts.</Description>
-              <NavigationButton
-                label="REFRESH"
-                onClick={fetchQueue}
-                width="160px"
-                compact={true}
-              />
+              <RefreshButton onClick={fetchQueue} />
             </div>
 
             <div style={{ overflowX: 'auto' }}>
