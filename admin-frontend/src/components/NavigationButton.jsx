@@ -122,16 +122,16 @@ const StyledWrapper = styled.div`
   .button__drow1 {
     top: -16px;
     left: 40px;
-    width: calc(32px * var(--drow-scale));
+    width: 32px;
     height: 0;
-    transform: rotate(30deg);
+    transform: rotate(30deg) scale(var(--drow-scale));
   }
   .button__drow2 {
     top: 44px;
     left: 77px;
-    width: calc(32px * var(--drow-scale));
+    width: 32px;
     height: 0;
-    transform: rotate(-127deg);
+    transform: rotate(-127deg) scale(var(--drow-scale));
   }
   .button__drow1::before,
   .button__drow1::after,
@@ -144,7 +144,7 @@ const StyledWrapper = styled.div`
     bottom: 0;
     left: 0;
     width: 0;
-    height: calc(32px * var(--drow-scale));
+    height: 32px;
     border-radius: 16px;
     transform-origin: 16px 16px;
     transform: rotate(-60deg);
@@ -153,7 +153,7 @@ const StyledWrapper = styled.div`
     top: -10px;
     left: 45px;
     width: 0;
-    height: calc(32px * var(--drow-scale));
+    height: 32px;
     border-radius: 16px;
     transform-origin: 16px 16px;
     transform: rotate(69deg);
@@ -162,7 +162,7 @@ const StyledWrapper = styled.div`
     bottom: 0;
     left: 0;
     width: 0;
-    height: calc(32px * var(--drow-scale));
+    height: 32px;
     border-radius: 16px;
     transform-origin: 16px 16px;
     transform: rotate(-146deg);
@@ -171,7 +171,7 @@ const StyledWrapper = styled.div`
     bottom: 26px;
     left: -40px;
     width: 0;
-    height: calc(32px * var(--drow-scale));
+    height: 32px;
     border-radius: 16px;
     transform-origin: 16px 16px;
     transform: rotate(-262deg);
@@ -210,25 +210,25 @@ const StyledWrapper = styled.div`
   }
   @keyframes drow1 {
     0% { height: 0; }
-    100% { height: calc(100px * var(--drow-scale)); }
+    100% { height: 100px; }
   }
   @keyframes drow2 {
     0% { width: 0; opacity: 0; }
     10% { opacity: 0; }
     11% { opacity: 1; }
-    100% { width: calc(120px * var(--drow-scale)); }
+    100% { width: 120px; }
   }
   @keyframes drow3 {
     0% { width: 0; }
-    100% { width: calc(80px * var(--drow-scale)); }
+    100% { width: 80px; }
   }
   @keyframes drow4 {
     0% { height: 0; }
-    100% { height: calc(120px * var(--drow-scale)); }
+    100% { height: 120px; }
   }
   @keyframes drow5 {
     0% { width: 0; }
-    100% { width: calc(124px * var(--drow-scale)); }
+    100% { width: 124px; }
   }
 `;
 
