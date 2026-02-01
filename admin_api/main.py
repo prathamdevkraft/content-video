@@ -154,6 +154,9 @@ async def generate_script(req: GenerateScriptRequest):
         
         return {"status": "success", "job": new_job}
     except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"ERROR in /generate-script: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/approve-script")
