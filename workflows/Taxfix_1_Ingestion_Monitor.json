@@ -158,7 +158,7 @@
                         },
                         {
                             "role": "user",
-                            "content": "News Item:\nTitle: {{ $json.title }}\nLink: {{ $json.link }}\nAnalyze:"
+                            "content": "Analyze the following SINGLE news item.\nTitle: {{ $json.title }}\nLink: {{ $json.link }}\nSource: {{ $json.source }}\n\nInstructions:\n1. Return ONLY the JSON object for this specific item.\n2. Do NOT generate a list of examples.\n3. Do NOT invent new news items.\n4. If the title is empty or generic, return { \"relevant\": false }."
                         }
                     ]
                 }
