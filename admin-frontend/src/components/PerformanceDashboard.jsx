@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { ShieldCheck, Activity, Globe, TrendingUp } from 'lucide-react';
 
@@ -103,6 +104,21 @@ const PIE_DATA = [
 ];
 
 const PerformanceDashboard = () => {
+    const [data, setData] = useState(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const res = await axios.get('http://13.200.99.186:8020/analytics');
+                setData(res.data);
+            } catch (e) { console.error(e); }
+        };
+        fetchData();
+    }, []);
+
+    const pieData = data ? data.status_distribution : PIE_DATA;
+    const totalAssets = data ? data.total_assets : 0;
+
     return (
         <Container>
             <Header>
@@ -115,7 +131,7 @@ const PerformanceDashboard = () => {
             <KPIGrid>
                 <KPIBox>
                     <ShieldCheck size={24} color="#16a34a" />
-                    <KPIValue>98.2%</KPIValue>
+                    <KPIValue>{data ? data.compliance_rate : 98}%</KPIValue>
                     <KPILabel>Compliance Pass Rate</KPILabel>
                 </KPIBox>
                 <KPIBox>
@@ -129,7 +145,7 @@ const PerformanceDashboard = () => {
                     <KPILabel>AEO Answer Share (MoM)</KPILabel>
                 </KPIBox>
                 <KPIBox>
-                    <div style={{ fontWeight: 900, fontSize: '24px' }}>58 / 60</div>
+                    <div style={{ fontWeight: 900, fontSize: '24px' }}>{totalAssets} / 60</div>
                     <KPILabel>Daily Output Goal (Assets)</KPILabel>
                 </KPIBox>
             </KPIGrid>
@@ -172,7 +188,7 @@ const PerformanceDashboard = () => {
                     <ResponsiveContainer width="100%" height="85%">
                         <PieChart>
                             <Pie
-                                data={PIE_DATA}
+                                data={pieData}
                                 cx="50%"
                                 cy="50%"
                                 labelLine={false}
@@ -181,7 +197,7 @@ const PerformanceDashboard = () => {
                                 dataKey="value"
                                 label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                             >
-                                {PIE_DATA.map((entry, index) => (
+                                {pieData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={['#16a34a', '#dc2626', '#fbbf24'][index % 3]} />
                                 ))}
                             </Pie>

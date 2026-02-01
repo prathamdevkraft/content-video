@@ -3,148 +3,98 @@
     "nodes": [
         {
             "parameters": {
-                "rule": {
-                    "interval": [
-                        {
-                            "field": "minutes",
-                            "triggerAtHour": 15
-                        }
-                    ]
-                }
+                "httpMethod": "POST",
+                "path": "publish-video",
+                "options": {}
             },
-            "name": "Schedule Trigger",
-            "type": "n8n-nodes-base.scheduleTrigger",
+            "name": "Webhook: Publish",
+            "type": "n8n-nodes-base.webhook",
             "typeVersion": 1,
             "position": [
-                250,
+                100,
                 300
             ],
-            "id": "schedule-trigger"
+            "id": "webhook-publish"
         },
         {
             "parameters": {
-                "operation": "getAll",
-                "tableId": "content_queue",
-                "limit": 5,
-                "filters": {
-                    "conditions": [
-                        {
-                            "key": "status",
-                            "value": "APPROVED",
-                            "operator": "eq"
-                        }
-                    ]
-                }
+                "amount": 2,
+                "unit": "seconds"
             },
-            "name": "Get Approved Jobs",
-            "type": "n8n-nodes-base.supabase",
+            "name": "Wait: Uploading",
+            "type": "n8n-nodes-base.wait",
             "typeVersion": 1,
             "position": [
-                450,
+                300,
                 300
             ],
-            "credentials": {
-                "supabaseApi": {
-                    "id": "supabase_api_creds",
-                    "name": "Supabase API"
-                }
-            },
-            "id": "get-approved"
-        },
-        {
-            "parameters": {
-                "jsCode": "// Mock Social Media Upload\n// Simulates uploading to TikTok/YouTube/IG\nconst platform = userSettings.platform || 'TikTok';\nconst id = Math.random().toString(36).substring(7);\n\nreturn {\n  ...$json,\n  published_url: `https://${platform.toLowerCase()}.com/taxfix_official/video/${id}`,\n  upload_success: true,\n  timestamp: new Date().toISOString()\n};"
-            },
-            "name": "Mock Upload API",
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 1,
-            "position": [
-                650,
-                300
-            ],
-            "id": "mock-upload"
+            "id": "wait-upload"
         },
         {
             "parameters": {
                 "operation": "update",
                 "tableId": "content_queue",
-                "rowId": "={{ $json.id }}",
-                "columnsUi": {
-                    "columnValues": [
-                        {
-                            "fieldId": "status",
-                            "fieldValue": "PUBLISHED"
-                        },
-                        {
-                            "fieldId": "published_url",
-                            "fieldValue": "={{ $json.published_url }}"
-                        },
-                        {
-                            "fieldId": "retry_count",
-                            "fieldValue": 0
-                        }
-                    ]
-                }
+                "updateKey": "id",
+                "columns": "status",
+                "options": {}
             },
-            "name": "Mark Published",
+            "name": "DB: Published",
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                850,
+                500,
                 300
             ],
+            "id": "db-published",
             "credentials": {
                 "supabaseApi": {
                     "id": "supabase_api_creds",
                     "name": "Supabase API"
                 }
-            },
-            "id": "mark-published"
+            }
         },
         {
             "parameters": {
-                "content": "## Publisher (Phase 3)\n\nHandles the final mile:\n\n1. **Get Approved**: Polles DB (Supabase API) for `APPROVED` items.\n2. **Mock Upload**: Simulates API upload (returns fake URL).\n3. **Mark Published**: Updates DB with `status=PUBLISHED` and URL.",
-                "height": 300,
-                "width": 500
+                "jsCode": "return {\n  id: $('Webhook: Publish').item.json.body.id,\n  status: 'PUBLISHED'\n};"
             },
-            "name": "Documentation",
-            "type": "n8n-nodes-base.stickyNote",
+            "name": "Format Publish",
+            "type": "n8n-nodes-base.code",
             "typeVersion": 1,
             "position": [
-                300,
-                100
+                400,
+                300
             ],
-            "id": "doc-note"
+            "id": "format-publish"
         }
     ],
     "connections": {
-        "Schedule Trigger": {
+        "Webhook: Publish": {
             "main": [
                 [
                     {
-                        "node": "Get Approved Jobs",
+                        "node": "Wait: Uploading",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Get Approved Jobs": {
+        "Wait: Uploading": {
             "main": [
                 [
                     {
-                        "node": "Mock Upload API",
+                        "node": "Format Publish",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Mock Upload API": {
+        "Format Publish": {
             "main": [
                 [
                     {
-                        "node": "Mark Published",
+                        "node": "DB: Published",
                         "type": "main",
                         "index": 0
                     }

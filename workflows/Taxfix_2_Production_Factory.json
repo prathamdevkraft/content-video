@@ -2,15 +2,98 @@
     "name": "Taxfix_2_Production_Factory",
     "nodes": [
         {
-            "parameters": {},
-            "name": "Manual Trigger",
-            "type": "n8n-nodes-base.manualTrigger",
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "generate-script",
+                "options": {}
+            },
+            "name": "Webhook: Generate",
+            "type": "n8n-nodes-base.webhook",
             "typeVersion": 1,
             "position": [
-                250,
+                100,
                 300
             ],
-            "id": "manual-trigger"
+            "id": "webhook-generate"
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "model": "gpt-4o",
+                "jsonOutput": true,
+                "messages": {
+                    "values": [
+                        {
+                            "content": "You are a viral TikTok tax educator for Taxfix. Generate a script for the topic: \"{{ $json.body.topic }}\". Language: {{ $json.body.language || 'de' }}.\n\nReturn strict JSON:\n{\n  \"hook\": \"Attention grabber (0-5s)\",\n  \"body\": \"Main educational value (20s)\",\n  \"cta\": \"Call to Action\"\n}"
+                        }
+                    ]
+                }
+            },
+            "name": "AI: Generate Draft",
+            "type": "n8n-nodes-base.openAi",
+            "typeVersion": 1,
+            "position": [
+                300,
+                300
+            ],
+            "id": "ai-generate",
+            "credentials": {
+                "openAiApi": {
+                    "id": "openai_account",
+                    "name": "OpenAI account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const script = JSON.parse($json.message.content);\nreturn {\n  id: $('Webhook: Generate').item.json.body.id,\n  script_content: script,\n  status: 'PENDING_REVIEW'\n};"
+            },
+            "name": "Format Draft",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                500,
+                300
+            ],
+            "id": "format-draft"
+        },
+        {
+            "parameters": {
+                "operation": "update",
+                "tableId": "content_queue",
+                "updateKey": "id",
+                "columns": "script_content, status",
+                "options": {}
+            },
+            "name": "DB: Save Draft",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                700,
+                300
+            ],
+            "id": "db-save-draft",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "supabase_api_creds",
+                    "name": "Supabase API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "render-video",
+                "options": {}
+            },
+            "name": "Webhook: Render",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                100,
+                600
+            ],
+            "id": "webhook-render"
         },
         {
             "parameters": {
@@ -20,114 +103,21 @@
                 "filters": {
                     "conditions": [
                         {
-                            "key": "status",
-                            "value": "PENDING_GENERATION",
+                            "key": "id",
+                            "value": "={{ $json.body.id }}",
                             "operator": "eq"
                         }
                     ]
                 }
             },
-            "name": "Get Pending Job",
+            "name": "DB: Get Job",
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                450,
-                300
+                300,
+                600
             ],
-            "credentials": {
-                "supabaseApi": {
-                    "id": "supabase_api_creds",
-                    "name": "Supabase API"
-                }
-            },
-            "id": "get-job"
-        },
-        {
-            "parameters": {
-                "resource": "chat",
-                "model": "gpt-4o",
-                "jsonOutput": true,
-                "messages": {
-                    "values": [
-                        {
-                            "content": "You are a viral TikTok tax educator for Taxfix.\n\nTopic: \"{{ $json.topic }}\"\nSource: {{ $json.source_url }}\nPlatform: TikTok\nTarget: German taxpayers (25-45 years old)\n\nHOOK STRATEGY (choose the best fit):\n- If topic is about deductions → Use Money Hook\n- If topic is about rule changes → Use Deadline Hook\n- If topic is complex/confusing → Use Confusion Hook\n- If topic is commonly misunderstood → Use Myth-Buster Hook\n\nSCRIPT RULES:\n1. Hook (3-5 sec): Grab attention immediately\n2. Body (20-30 sec): ONE clear point + example + legal citation\n3. CTA (5-10 sec): Clear next step (link/follow/save)\n\nCOMPLIANCE (NON-NEGOTIABLE):\n- Cite specific law (EStG § X or AO § Y)\n- No personalized advice (\"you should...\")\n- No guaranteed refund amounts\n- Verify against source: {{ $json.source_url }}\n\nReturn ONLY this JSON structure:\n{\n  \"script_structure\": {\n    \"hook\": \"Pattern interrupt that stops the scroll\",\n    \"body\": \"Educational content with example and § citation\",\n    \"cta\": \"Specific action (not just 'check link')\"\n  },\n  \"social_metrics\": {\n    \"caption\": \"Engaging caption under 100 chars\",\n    \"hashtags\": [\"#Steuern\", \"#Steuertipps\", \"#Deutschland\", \"#specific-to-topic\"]\n  },\n  \"compliance_notes\": \"Which EStG/AO section was verified\"\n}"
-                        }
-                    ]
-                }
-            },
-            "name": "Generate Script",
-            "type": "n8n-nodes-base.openAi",
-            "typeVersion": 1,
-            "position": [
-                650,
-                300
-            ],
-            "id": "generate-script",
-            "credentials": {
-                "openAiApi": {
-                    "id": "openai_account",
-                    "name": "OpenAI account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "jsCode": "// Parse OpenAI JSON and merge with original ID\nconst aiContent = $json.message.content;\nlet parsed = {};\ntry {\n  parsed = JSON.parse(aiContent);\n} catch(e) {\n  parsed = { error: \"Failed to parse AI JSON\", raw: aiContent };\n}\n\n// Pass through original ID and other keys from the *previous* node (Get Pending Job)\n// We need to access the parent data. Since n8n logic can be tricky, we'll explicitly pass ID from input if preserved, or we rely on the flow.\n// Wait, OpenAI node might replace top-level JSON. \n// To be safe, we will rely on the fact that we can access the 'Get Pending Job' node data directly in the Update node, OR we re-map it here.\n\nreturn {\n  ...parsed,\n  id: $('Get Pending Job').item.json.id, // Explicitly grab ID from the trigger source to be safe\n  topic: $('Get Pending Job').item.json.topic,\n  source_url: $('Get Pending Job').item.json.source_url\n};"
-            },
-            "name": "Parse AI Response",
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 1,
-            "position": [
-                750,
-                300
-            ],
-            "id": "parse-ai-response"
-        },
-        {
-            "parameters": {
-                "method": "POST",
-                "url": "https://api.openai.com/v1/embeddings",
-                "authentication": "predefinedCredentialType",
-                "nodeCredentialType": "openAiApi",
-                "sendBody": true,
-                "contentType": "json",
-                "body": "={{ JSON.stringify({\n  model: \"text-embedding-3-small\",\n  input: $('Parse AI Response').item.json.script_structure.body\n}) }}",
-                "options": {}
-            },
-            "name": "Create Embeddings",
-            "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 3,
-            "position": [
-                850,
-                300
-            ],
-            "id": "create-embeddings",
-            "credentials": {
-                "openAiApi": {
-                    "id": "openai_account",
-                    "name": "OpenAI account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "method": "POST",
-                "url": "https://cqcsdghsbgivwpulfzfd.supabase.co/rest/v1/rpc/match_tax_laws",
-                "authentication": "predefinedCredentialType",
-                "nodeCredentialType": "supabaseApi",
-                "sendBody": true,
-                "contentType": "json",
-                "body": "={{ JSON.stringify({\n  query_embedding: $json.data[0].embedding,\n  match_threshold: 0.5,\n  match_count: 3\n}) }}",
-                "options": {}
-            },
-            "name": "Vector Search",
-            "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 3,
-            "position": [
-                950,
-                300
-            ],
-            "id": "vector-search",
+            "id": "db-get-job",
             "credentials": {
                 "supabaseApi": {
                     "id": "supabase_api_creds",
@@ -137,202 +127,150 @@
         },
         {
             "parameters": {
-                "jsCode": "// Merge Retrieved Docs for Context\nconst docs = $items.map(i => i.json.content).join('\\n---\\n');\n// We need to pass the ORIGINAL script data to the next node too. \n// In n8n, this is best done by accessing the 'Parse AI Response' node directly in the next OpenAI node.\nreturn { docs };"
+                "jsCode": "const script = $json.script_content;\nconst id = $json.id;\n\n// Editly Configuration\nconst config = {\n  width: 720,\n  height: 1280,\n  fps: 30,\n  outPath: `/data/files/video_${id}.mp4`,\n  clips: [\n    { duration: 3, layers: [{ type: 'title', text: script.hook, background: '#16a34a' }] },\n    { duration: 6, layers: [{ type: 'title', text: script.body.substring(0, 100), background: '#000000' }] },\n    { duration: 3, layers: [{ type: 'title', text: script.cta, background: '#3b82f6' }] }\n  ]\n};\n\nreturn {\n  config_json: JSON.stringify(config),\n  output_file: `video_${id}.mp4`,\n  id: id\n};"
             },
-            "name": "Merge Context",
+            "name": "Config: Editly",
             "type": "n8n-nodes-base.code",
             "typeVersion": 1,
             "position": [
-                1050,
-                300
+                500,
+                600
             ],
-            "id": "merge-context"
+            "id": "config-editly"
         },
         {
             "parameters": {
-                "resource": "chat",
-                "model": "gpt-4o",
-                "jsonOutput": true,
-                "messages": {
-                    "values": [
-                        {
-                            "content": "You are a Compliance Officer. Check the following video script for accuracy against the provided Tax Laws.\n\nSCRIPT:\n{{ $('Parse AI Response').item.json.script_structure.body }}\n\nTAX LAWS:\n{{ $json.docs }}\n\nReturn strict JSON:\n- compliance_score: (0.0 to 1.0)\n- validations: { \"checks\": [\"Checked against law X...\"], \"rag_notes\": \"Found law X matching...\" }"
-                        }
-                    ]
-                }
+                "command": "editly --json '{{ $json.config_json }}'"
             },
-            "name": "Check Compliance",
-            "type": "n8n-nodes-base.openAi",
+            "name": "CMD: Render",
+            "type": "n8n-nodes-base.executeCommand",
             "typeVersion": 1,
             "position": [
-                1150,
-                300
+                700,
+                600
             ],
-            "id": "check-compliance",
-            "credentials": {
-                "openAiApi": {
-                    "id": "openai_account",
-                    "name": "OpenAI account"
-                }
-            }
+            "id": "cmd-render"
         },
         {
             "parameters": {
-                "jsCode": "// Prepare Final Update Payload\n// Merge everything: ID, Script (from Parse AI), Compliance (from Check Compliance)\nconst scriptData = $('Parse AI Response').item.json;\nconst complianceData = JSON.parse($json.message.content);\n\nreturn {\n  ...scriptData,\n  ...complianceData,\n  status: \"PENDING_REVIEW\"\n};"
+                "jsCode": "return {\n  id: $node['Config: Editly'].json.id,\n  video_url: `http://13.200.99.186:8020/files/${$node['Config: Editly'].json.output_file}`,\n  status: 'READY_TO_PUBLISH'\n};"
             },
-            "name": "Prepare Update",
+            "name": "Format Video Update",
             "type": "n8n-nodes-base.code",
             "typeVersion": 1,
             "position": [
-                1250,
-                300
+                900,
+                600
             ],
-            "id": "prepare-update"
+            "id": "format-video-update"
         },
         {
             "parameters": {
                 "operation": "update",
                 "tableId": "content_queue",
-                "options": {
-                    "ignoreExtraFields": true
-                },
-                "autoMapInputData": true,
-                "inputsToIgnore": "id,created_at,updated_at",
-                "filters": {
-                    "conditions": [
-                        {
-                            "key": "id",
-                            "value": "={{ $json.id }}",
-                            "operator": "eq"
-                        }
-                    ]
-                }
+                "updateKey": "id",
+                "columns": "video_url, status",
+                "options": {}
             },
-            "name": "Update DB",
+            "name": "DB: Video Ready",
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                1050,
-                300
+                1100,
+                600
             ],
+            "id": "db-video-ready",
             "credentials": {
                 "supabaseApi": {
                     "id": "supabase_api_creds",
                     "name": "Supabase API"
                 }
-            },
-            "id": "update-db"
-        },
-        {
-            "parameters": {
-                "content": "## Mock Factory (Phase 2)\n\nThis workflow simulates the full pipeline:\n\n1. **Get Job**: Fetches pending job (Supabase API).\n2. **Mock GenAI**: Returns static script/json.\n3. **Mock RAG**: Returns 0.92 score + validations.\n4. **Update DB**: Saves to content_queue (Supabase API).\n\n**Run this to populate Dashboard Tabs 2 & 3!**",
-                "height": 300,
-                "width": 600
-            },
-            "name": "Phase 2 Info",
-            "type": "n8n-nodes-base.stickyNote",
-            "typeVersion": 1,
-            "position": [
-                400,
-                100
-            ],
-            "id": "info-note"
+            }
         }
     ],
     "connections": {
-        "Manual Trigger": {
+        "Webhook: Generate": {
             "main": [
                 [
                     {
-                        "node": "Get Pending Job",
+                        "node": "AI: Generate Draft",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Get Pending Job": {
+        "AI: Generate Draft": {
             "main": [
                 [
                     {
-                        "node": "Generate Script",
+                        "node": "Format Draft",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Generate Script": {
+        "Format Draft": {
             "main": [
                 [
                     {
-                        "node": "Parse AI Response",
+                        "node": "DB: Save Draft",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Parse AI Response": {
+        "Webhook: Render": {
             "main": [
                 [
                     {
-                        "node": "Create Embeddings",
+                        "node": "DB: Get Job",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Create Embeddings": {
+        "DB: Get Job": {
             "main": [
                 [
                     {
-                        "node": "Vector Search",
+                        "node": "Config: Editly",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Vector Search": {
+        "Config: Editly": {
             "main": [
                 [
                     {
-                        "node": "Merge Context",
+                        "node": "CMD: Render",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Merge Context": {
+        "CMD: Render": {
             "main": [
                 [
                     {
-                        "node": "Check Compliance",
+                        "node": "Format Video Update",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Check Compliance": {
+        "Format Video Update": {
             "main": [
                 [
                     {
-                        "node": "Prepare Update",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Prepare Update": {
-            "main": [
-                [
-                    {
-                        "node": "Update DB",
+                        "node": "DB: Video Ready",
                         "type": "main",
                         "index": 0
                     }
