@@ -303,6 +303,7 @@ function App() {
                 label="REFRESH"
                 onClick={fetchQueue}
                 width="160px"
+                compact={true}
               />
             </div>
 

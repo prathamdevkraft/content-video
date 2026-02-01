@@ -1,9 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
 
-const NavigationButton = ({ onClick, label = "DASHBOARD", width = "240px" }) => {
+const NavigationButton = ({ onClick, label = "DASHBOARD", width = "240px", compact = false }) => {
   return (
-    <StyledWrapper $width={width}>
+    <StyledWrapper $width={width} $compact={compact}>
       <a href="#" className="button type--C" onClick={(e) => { e.preventDefault(); onClick && onClick(); }}>
         <div className="button__line" />
         <div className="button__line" />
@@ -19,6 +19,7 @@ const StyledWrapper = styled.div`
   .type--C {
     --line_color: #000000;
     --back_color: #4ade80; 
+    --drow-scale: ${props => props.$compact ? 0.6 : 1.0};
   }
   .button {
     position: relative;
@@ -27,14 +28,14 @@ const StyledWrapper = styled.div`
     height: 56px;
     text-decoration: none;
     font-size: 14px;
-    font-weight: 800; /* Bolder for Neobrutalism */
+    font-weight: 800;
     color: var(--line_color);
     letter-spacing: 2px;
     transition: all 0.3s ease;
     display: flex;
     justify-content: center;
     align-items: center;
-    border: 2px solid transparent; /* Placeholder to keep layout stable */
+    border: 2px solid transparent; 
   }
   .button__text {
     display: flex;
@@ -50,7 +51,7 @@ const StyledWrapper = styled.div`
   .button__text::after {
     content: "";
     position: absolute;
-    height: 3px; /* Thicker lines */
+    height: 3px; 
     border-radius: 2px;
     background: var(--line_color);
     transition: all 0.5s ease;
@@ -121,14 +122,14 @@ const StyledWrapper = styled.div`
   .button__drow1 {
     top: -16px;
     left: 40px;
-    width: 32px;
+    width: calc(32px * var(--drow-scale));
     height: 0;
     transform: rotate(30deg);
   }
   .button__drow2 {
     top: 44px;
     left: 77px;
-    width: 32px;
+    width: calc(32px * var(--drow-scale));
     height: 0;
     transform: rotate(-127deg);
   }
@@ -143,7 +144,7 @@ const StyledWrapper = styled.div`
     bottom: 0;
     left: 0;
     width: 0;
-    height: 32px;
+    height: calc(32px * var(--drow-scale));
     border-radius: 16px;
     transform-origin: 16px 16px;
     transform: rotate(-60deg);
@@ -152,7 +153,7 @@ const StyledWrapper = styled.div`
     top: -10px;
     left: 45px;
     width: 0;
-    height: 32px;
+    height: calc(32px * var(--drow-scale));
     border-radius: 16px;
     transform-origin: 16px 16px;
     transform: rotate(69deg);
@@ -161,7 +162,7 @@ const StyledWrapper = styled.div`
     bottom: 0;
     left: 0;
     width: 0;
-    height: 32px;
+    height: calc(32px * var(--drow-scale));
     border-radius: 16px;
     transform-origin: 16px 16px;
     transform: rotate(-146deg);
@@ -170,7 +171,7 @@ const StyledWrapper = styled.div`
     bottom: 26px;
     left: -40px;
     width: 0;
-    height: 32px;
+    height: calc(32px * var(--drow-scale));
     border-radius: 16px;
     transform-origin: 16px 16px;
     transform: rotate(-262deg);
@@ -209,25 +210,25 @@ const StyledWrapper = styled.div`
   }
   @keyframes drow1 {
     0% { height: 0; }
-    100% { height: 100px; }
+    100% { height: calc(100px * var(--drow-scale)); }
   }
   @keyframes drow2 {
     0% { width: 0; opacity: 0; }
     10% { opacity: 0; }
     11% { opacity: 1; }
-    100% { width: 120px; }
+    100% { width: calc(120px * var(--drow-scale)); }
   }
   @keyframes drow3 {
     0% { width: 0; }
-    100% { width: 80px; }
+    100% { width: calc(80px * var(--drow-scale)); }
   }
   @keyframes drow4 {
     0% { height: 0; }
-    100% { height: 120px; }
+    100% { height: calc(120px * var(--drow-scale)); }
   }
   @keyframes drow5 {
     0% { width: 0; }
-    100% { width: 124px; }
+    100% { width: calc(124px * var(--drow-scale)); }
   }
 `;
 
