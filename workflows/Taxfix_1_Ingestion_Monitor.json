@@ -115,21 +115,46 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 1,
             "position": [
-                850,
+                950,
                 300
             ],
             "id": "limit-batch"
         },
         {
             "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.title }}",
+                            "operation": "isNotEmpty"
+                        }
+                    ]
+                }
+            },
+            "name": "Filter Empty Titles",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ],
+            "id": "filter-empty"
+        },
+        {
+            "parameters": {
                 "resource": "chat",
                 "model": "gpt-4o-mini",
                 "jsonOutput": true,
+                "options": {
+                    "responseFormat": {
+                        "type": "json_object"
+                    }
+                },
                 "messages": {
                     "values": [
                         {
                             "role": "system",
-                            "content": "You are a strict Taxfix Content Editor. Your job is to filter a general finance feed for TAX-SPECIFIC news for young people (25-35).\n\nSTRICTLY RELEVANT (Set relevant: true):\n- Tax Law Changes (EStG), Deadlines (Steuererklärungsfrist), Deductions (Werbungskosten).\n- Direct Government Benefits (Kindergeld, Energiepauschale, BaföG changes).\n- Social Security changes (Krankenkassenbeitrag, Rentenpunkte).\n\nSTRICTLY IRRELEVANT (Set relevant: false):\n- General Economy (Inflation rate, GDP, ECB interest rates).\n- Stock Market/Company News (DAX, Tesla stock, quarterly earnings).\n- International Politics/Trade (US Tariffs, EU summits).\n- Corporate/Business Tax (Gewerbesteuer, supply chains).\n\nIf in doubt, reject it.\n\nReturn JSON:\n{\n  \"relevant\": true/false,\n  \"topic\": \"Clickbaity German Title (e.g. 'Mehr Netto vom Brutto 2026?')\",\n  \"confidence\": 0.0-1.0,\n  \"platform\": \"TikTok\",\n  \"reasoning\": \"Why it fits Taxfix userbase\"\n}"
+                            "content": "You are a strict Taxfix Content Editor. Your job is to filter a general finance feed for TAX-SPECIFIC news for young people (25-35).\n\nSTRICTLY RELEVANT (Set relevant: true):\n- Tax Law Changes (EStG), Deadlines (Steuererklärungsfrist), Deductions (Werbungskosten).\n- Direct Government Benefits (Kindergeld, Energiepauschale, BaföG changes).\n- Social Security changes (Krankenkassenbeitrag, Rentenpunkte).\n\nSTRICTLY IRRELEVANT (Set relevant: false):\n- General Economy (Inflation rate, GDP, ECB interest rates).\n- Stock Market/Company News (DAX, Tesla stock, quarterly earnings).\n- International Politics/Trade (US Tariffs, EU summits).\n- Corporate/Business Tax (Gewerbesteuer, supply chains).\n\nIf in doubt, reject it.\n\nReturn strictly a single JSON object:\n{\n  \"relevant\": true/false,\n  \"topic\": \"Clickbaity German Title (e.g. 'Mehr Netto vom Brutto 2026?')\",\n  \"confidence\": 0.0-1.0,\n  \"platform\": \"TikTok\",\n  \"reasoning\": \"Why it fits Taxfix userbase\"\n}"
                         },
                         {
                             "role": "user",
@@ -142,7 +167,7 @@
             "type": "n8n-nodes-base.openAi",
             "typeVersion": 1,
             "position": [
-                950,
+                1050,
                 300
             ],
             "id": "analyze-relevance",
@@ -152,6 +177,19 @@
                     "name": "OpenAI account"
                 }
             }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Parse OpenAI Response & Flatten\nconst content = $json.message.content;\nlet parsed = {};\ntry {\n  parsed = JSON.parse(content);\n} catch(e) {\n  parsed = { relevant: false, reason: \"JSON Parse Fail\" };\n}\n\nreturn {\n  ...$json,\n  ...parsed\n};"
+            },
+            "name": "Parse AI Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                1150,
+                300
+            ],
+            "id": "parse-ai-response"
         },
         {
             "parameters": {
@@ -341,6 +379,17 @@
             "main": [
                 [
                     {
+                        "node": "Filter Empty Titles",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter Empty Titles": {
+            "main": [
+                [
+                    {
                         "node": "Limit Batch Size",
                         "type": "main",
                         "index": 0
@@ -360,6 +409,17 @@
             ]
         },
         "Analyze Relevance": {
+            "main": [
+                [
+                    {
+                        "node": "Parse AI Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse AI Response": {
             "main": [
                 [
                     {
