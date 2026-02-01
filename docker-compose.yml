@@ -115,6 +115,8 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     networks:
       - taxfix-network
+    volumes:
+      - ./n8n_factory/local_files:/files
 
   # ============================================================================
   # NEW ADMIN UI (Vite/React - Frontend)
