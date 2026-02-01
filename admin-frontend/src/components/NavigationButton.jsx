@@ -1,18 +1,18 @@
 import React from 'react';
 import styled from 'styled-components';
 
-const NavigationButton = ({ onClick, label = "DASHBOARD" }) => {
-    return (
-        <StyledWrapper>
-            <a href="#" className="button type--C" onClick={(e) => { e.preventDefault(); onClick && onClick(); }}>
-                <div className="button__line" />
-                <div className="button__line" />
-                <span className="button__text">{label}</span>
-                <div className="button__drow1" />
-                <div className="button__drow2" />
-            </a>
-        </StyledWrapper>
-    );
+const NavigationButton = ({ onClick, label = "DASHBOARD", width = "240px" }) => {
+  return (
+    <StyledWrapper $width={width}>
+      <a href="#" className="button type--C" onClick={(e) => { e.preventDefault(); onClick && onClick(); }}>
+        <div className="button__line" />
+        <div className="button__line" />
+        <span className="button__text">{label}</span>
+        <div className="button__drow1" />
+        <div className="button__drow2" />
+      </a>
+    </StyledWrapper>
+  );
 }
 
 const StyledWrapper = styled.div`
@@ -23,7 +23,7 @@ const StyledWrapper = styled.div`
   .button {
     position: relative;
     z-index: 0;
-    width: 240px;
+    width: ${props => props.$width};
     height: 56px;
     text-decoration: none;
     font-size: 14px;

@@ -299,9 +299,11 @@ function App() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
               <Description>Real-time view of generated video scripts.</Description>
-              <button onClick={fetchQueue} style={{ background: 'none', border: '2px solid black', padding: '8px 16px', fontWeight: 'bold', cursor: 'pointer' }}>
-                REFRESH
-              </button>
+              <NavigationButton
+                label="REFRESH"
+                onClick={fetchQueue}
+                width="160px"
+              />
             </div>
 
             <div style={{ overflowX: 'auto' }}>
