@@ -44,16 +44,44 @@
         },
         {
             "parameters": {
-                "jsCode": "// Mock OpenAI Script Generation\n// Pass through previous data\nconst input = $json;\n\nreturn {\n  ...input,\n  script_structure: {\n    hook: \"Did you know you can claim home office costs?\",\n    body: \"New tax rules for 2024 allow a flat rate deduction even if you don't have a dedicated room. You can claim 6 euros per day for up to 210 days.\",\n    cta: \"Check the link in bio for the official BMF guide!\"\n  },\n  social_metrics: {\n    caption: \"Home Office Pauschale 2024 explained! 🏠💰 #Taxfix #Steuertipps\",\n    hashtags: [\"#HomeOffice\", \"#Steuern\", \"#2024\"]\n  }\n};"
+                "resource": "chat",
+                "model": "gpt-4o",
+                "jsonOutput": true,
+                "messages": {
+                    "values": [
+                        {
+                            "content": "You are a tax expert for Taxfix. Generate a TikTok video script for the topic: \"{{ $json.topic }}\".\n\nReturn strict JSON with these keys:\n- script_structure: { \"hook\": \"...\", \"body\": \"...\", \"cta\": \"...\" }\n- social_metrics: { \"caption\": \"...\", \"hashtags\": [\"...\"] }"
+                        }
+                    ]
+                }
             },
-            "name": "Mock GenAI",
-            "type": "n8n-nodes-base.code",
+            "name": "Generate Script",
+            "type": "n8n-nodes-base.openAi",
             "typeVersion": 1,
             "position": [
                 650,
                 300
             ],
-            "id": "mock-genai"
+            "id": "generate-script",
+            "credentials": {
+                "openAiApi": {
+                    "id": "openai_account",
+                    "name": "OpenAI account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Parse OpenAI JSON and merge with original ID\nconst aiContent = $json.message.content;\nlet parsed = {};\ntry {\n  parsed = JSON.parse(aiContent);\n} catch(e) {\n  parsed = { error: \"Failed to parse AI JSON\", raw: aiContent };\n}\n\n// Pass through original ID and other keys from the *previous* node (Get Pending Job)\n// We need to access the parent data. Since n8n logic can be tricky, we'll explicitly pass ID from input if preserved, or we rely on the flow.\n// Wait, OpenAI node might replace top-level JSON. \n// To be safe, we will rely on the fact that we can access the 'Get Pending Job' node data directly in the Update node, OR we re-map it here.\n\nreturn {\n  ...parsed,\n  id: $('Get Pending Job').item.json.id, // Explicitly grab ID from the trigger source to be safe\n  topic: $('Get Pending Job').item.json.topic,\n  source_url: $('Get Pending Job').item.json.source_url\n};"
+            },
+            "name": "Parse AI Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                750,
+                300
+            ],
+            "id": "parse-ai-response"
         },
         {
             "parameters": {
@@ -134,14 +162,25 @@
             "main": [
                 [
                     {
-                        "node": "Mock GenAI",
+                        "node": "Generate Script",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Mock GenAI": {
+        "Generate Script": {
+            "main": [
+                [
+                    {
+                        "node": "Parse AI Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse AI Response": {
             "main": [
                 [
                     {
