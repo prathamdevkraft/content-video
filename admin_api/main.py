@@ -136,7 +136,17 @@ async def generate_script(req: GenerateScriptRequest):
         raise HTTPException(status_code=500, detail="DB Config Missing")
     
     try:
-        # Insert into DB
+        # 1. Check if topic already exists to prevent duplicates (Idempotency)
+        existing = supabase.table("content_queue").select("*").eq("topic", req.topic).execute()
+        if existing.data and len(existing.data) > 0:
+            print(f"Topic '{req.topic}' already exists. Returning existing job.")
+            item = existing.data[0]
+            
+            # Optional: If it was stuck in ERROR or something, maybe we want to retry? 
+            # For now, just return it so UI redirects to it.
+            return {"status": "success", "job": item}
+
+        # 2. Insert into DB
         data = {
             "topic": req.topic,
             "source_url": req.source_url,
