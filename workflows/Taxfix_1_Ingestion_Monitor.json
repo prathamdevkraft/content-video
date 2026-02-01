@@ -109,8 +109,21 @@
         },
         {
             "parameters": {
+                "jsCode": "// Limit to top 15 items to prevent Timeout\nreturn $input.all().slice(0, 15);"
+            },
+            "name": "Limit Batch Size",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ],
+            "id": "limit-batch"
+        },
+        {
+            "parameters": {
                 "resource": "chat",
-                "model": "gpt-4o",
+                "model": "gpt-4o-mini",
                 "jsonOutput": true,
                 "messages": {
                     "values": [
@@ -325,6 +338,17 @@
             ]
         },
         "Merge Feeds": {
+            "main": [
+                [
+                    {
+                        "node": "Limit Batch Size",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Limit Batch Size": {
             "main": [
                 [
                     {
