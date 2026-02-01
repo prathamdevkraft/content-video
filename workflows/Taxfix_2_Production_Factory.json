@@ -14,20 +14,30 @@
         },
         {
             "parameters": {
-                "operation": "executeQuery",
-                "query": "SELECT * FROM content_queue WHERE status = 'PENDING_GENERATION' LIMIT 1;"
+                "operation": "getAll",
+                "tableId": "content_queue",
+                "limit": 1,
+                "filters": {
+                    "conditions": [
+                        {
+                            "key": "status",
+                            "value": "PENDING_GENERATION",
+                            "operator": "eq"
+                        }
+                    ]
+                }
             },
             "name": "Get Pending Job",
-            "type": "n8n-nodes-base.postgres",
+            "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
                 450,
                 300
             ],
             "credentials": {
-                "postgres": {
-                    "id": "supabase_creds",
-                    "name": "Supabase DB"
+                "supabaseApi": {
+                    "id": "supabase_api_creds",
+                    "name": "Supabase API"
                 }
             },
             "id": "get-job"
@@ -61,43 +71,51 @@
         {
             "parameters": {
                 "operation": "update",
-                "table": {
-                    "__rl": true,
-                    "value": "content_queue",
-                    "mode": "name"
-                },
-                "columns": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "status": "PENDING_REVIEW",
-                        "compliance_score": "={{ $json.compliance_score }}",
-                        "script_structure": "={{ JSON.stringify($json.script_structure) }}",
-                        "validations": "={{ JSON.stringify($json.validations) }}",
-                        "social_metrics": "={{ JSON.stringify($json.social_metrics) }}"
-                    },
-                    "matchingColumns": [
-                        "id"
+                "tableId": "content_queue",
+                "rowId": "={{ $('Get Pending Job').item.json.id }}",
+                "columnsUi": {
+                    "columnValues": [
+                        {
+                            "fieldId": "status",
+                            "fieldValue": "PENDING_REVIEW"
+                        },
+                        {
+                            "fieldId": "compliance_score",
+                            "fieldValue": "={{ $json.compliance_score }}"
+                        },
+                        {
+                            "fieldId": "script_structure",
+                            "fieldValue": "={{ JSON.stringify($json.script_structure) }}"
+                        },
+                        {
+                            "fieldId": "validations",
+                            "fieldValue": "={{ JSON.stringify($json.validations) }}"
+                        },
+                        {
+                            "fieldId": "social_metrics",
+                            "fieldValue": "={{ JSON.stringify($json.social_metrics) }}"
+                        }
                     ]
                 }
             },
             "name": "Update DB",
-            "type": "n8n-nodes-base.postgres",
+            "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
                 1050,
                 300
             ],
             "credentials": {
-                "postgres": {
-                    "id": "supabase_creds",
-                    "name": "Supabase DB"
+                "supabaseApi": {
+                    "id": "supabase_api_creds",
+                    "name": "Supabase API"
                 }
             },
             "id": "update-db"
         },
         {
             "parameters": {
-                "content": "## Mock Factory (Phase 2)\n\nThis workflow simulates the full pipeline:\n\n1. **Get Job**: Fetches pending job.\n2. **Mock GenAI**: Returns static script/json.\n3. **Mock RAG**: Returns 0.92 score + validations.\n4. **Update DB**: Saves to content_queue.\n\n**Run this to populate Dashboard Tabs 2 & 3!**",
+                "content": "## Mock Factory (Phase 2)\n\nThis workflow simulates the full pipeline:\n\n1. **Get Job**: Fetches pending job (Supabase API).\n2. **Mock GenAI**: Returns static script/json.\n3. **Mock RAG**: Returns 0.92 score + validations.\n4. **Update DB**: Saves to content_queue (Supabase API).\n\n**Run this to populate Dashboard Tabs 2 & 3!**",
                 "height": 300,
                 "width": 600
             },
@@ -116,14 +134,14 @@
             "main": [
                 [
                     {
-                        "node": "Get Job",
+                        "node": "Get Pending Job",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Get Job": {
+        "Get Pending Job": {
             "main": [
                 [
                     {

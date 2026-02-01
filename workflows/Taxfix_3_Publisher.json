@@ -23,20 +23,30 @@
         },
         {
             "parameters": {
-                "operation": "executeQuery",
-                "query": "SELECT * FROM content_queue WHERE status = 'APPROVED' LIMIT 5;"
+                "operation": "getAll",
+                "tableId": "content_queue",
+                "limit": 5,
+                "filters": {
+                    "conditions": [
+                        {
+                            "key": "status",
+                            "value": "APPROVED",
+                            "operator": "eq"
+                        }
+                    ]
+                }
             },
             "name": "Get Approved Jobs",
-            "type": "n8n-nodes-base.postgres",
+            "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
                 450,
                 300
             ],
             "credentials": {
-                "postgres": {
-                    "id": "supabase_creds",
-                    "name": "Supabase DB"
+                "supabaseApi": {
+                    "id": "supabase_api_creds",
+                    "name": "Supabase API"
                 }
             },
             "id": "get-approved"
@@ -57,41 +67,43 @@
         {
             "parameters": {
                 "operation": "update",
-                "table": {
-                    "__rl": true,
-                    "value": "content_queue",
-                    "mode": "name"
-                },
-                "columns": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "status": "PUBLISHED",
-                        "published_url": "={{ $json.published_url }}",
-                        "retry_count": 0
-                    },
-                    "matchingColumns": [
-                        "id"
+                "tableId": "content_queue",
+                "rowId": "={{ $json.id }}",
+                "columnsUi": {
+                    "columnValues": [
+                        {
+                            "fieldId": "status",
+                            "fieldValue": "PUBLISHED"
+                        },
+                        {
+                            "fieldId": "published_url",
+                            "fieldValue": "={{ $json.published_url }}"
+                        },
+                        {
+                            "fieldId": "retry_count",
+                            "fieldValue": 0
+                        }
                     ]
                 }
             },
             "name": "Mark Published",
-            "type": "n8n-nodes-base.postgres",
+            "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
                 850,
                 300
             ],
             "credentials": {
-                "postgres": {
-                    "id": "supabase_creds",
-                    "name": "Supabase DB"
+                "supabaseApi": {
+                    "id": "supabase_api_creds",
+                    "name": "Supabase API"
                 }
             },
             "id": "mark-published"
         },
         {
             "parameters": {
-                "content": "## Publisher (Phase 3)\n\nHandles the final mile:\n\n1. **Get Approved**: Polles DB for `APPROVED` items.\n2. **Mock Upload**: Simulates API upload (returns fake URL).\n3. **Mark Published**: Updates DB with `status=PUBLISHED` and URL.",
+                "content": "## Publisher (Phase 3)\n\nHandles the final mile:\n\n1. **Get Approved**: Polles DB (Supabase API) for `APPROVED` items.\n2. **Mock Upload**: Simulates API upload (returns fake URL).\n3. **Mark Published**: Updates DB with `status=PUBLISHED` and URL.",
                 "height": 300,
                 "width": 500
             },

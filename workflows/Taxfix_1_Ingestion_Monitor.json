@@ -48,41 +48,51 @@
         },
         {
             "parameters": {
-                "operation": "insert",
-                "table": {
-                    "__rl": true,
-                    "value": "content_queue",
-                    "mode": "name"
-                },
-                "columns": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "topic": "={{ $json.topic }}",
-                        "source_url": "={{ $json.source_url }}",
-                        "status": "PENDING_GENERATION",
-                        "platform": "={{ $json.platform }}",
-                        "compliance_score": 0.00
-                    }
+                "operation": "create",
+                "tableId": "content_queue",
+                "columnsUi": {
+                    "columnValues": [
+                        {
+                            "fieldId": "topic",
+                            "fieldValue": "={{ $json.topic }}"
+                        },
+                        {
+                            "fieldId": "source_url",
+                            "fieldValue": "={{ $json.source_url }}"
+                        },
+                        {
+                            "fieldId": "status",
+                            "fieldValue": "PENDING_GENERATION"
+                        },
+                        {
+                            "fieldId": "platform",
+                            "fieldValue": "={{ $json.platform }}"
+                        },
+                        {
+                            "fieldId": "compliance_score",
+                            "fieldValue": 0
+                        }
+                    ]
                 }
             },
             "name": "Add to Queue",
-            "type": "n8n-nodes-base.postgres",
+            "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
                 850,
                 300
             ],
             "credentials": {
-                "postgres": {
-                    "id": "supabase_creds",
-                    "name": "Supabase DB"
+                "supabaseApi": {
+                    "id": "supabase_api_creds",
+                    "name": "Supabase API"
                 }
             },
             "id": "add-queue"
         },
         {
             "parameters": {
-                "content": "## Ingestion Monitor (Phase 3)\n\nSimulates monitoring external sources:\n\n1. **Schedule**: Runs hourly.\n2. **RSS Source**: Mocks fetching tax news.\n3. **AI Filter**: Determines relevance.\n4. **Add to Queue**: Inserts into DB -> Triggers Factory.\n",
+                "content": "## Ingestion Monitor (Phase 3)\n\nSimulates monitoring external sources:\n\n1. **Schedule**: Runs hourly.\n2. **RSS Source**: Mocks fetching tax news.\n3. **AI Filter**: Determines relevance.\n4. **Add to Queue**: Inserts into DB (Supabase API) -> Triggers Factory.\n",
                 "height": 300,
                 "width": 500
             },
