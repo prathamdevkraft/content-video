@@ -67,7 +67,7 @@ services:
       start_period: 40s
 
   # ============================================================================
-  # STREAMLIT DASHBOARD (Enhanced 3-Tab Interface)
+  # STREAMLIT DASHBOARD (Legacy / Analytics)
   # ============================================================================
   dashboard:
     build:
@@ -78,37 +78,59 @@ services:
     ports:
       - "8501:8501"
     environment:
-      # ===== Supabase Credentials =====
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_KEY=${SUPABASE_KEY}
-      
-      # ===== Table Names (using existing names) =====
       - VIDEO_QUEUE_TABLE=content_queue
       - AUDIT_TABLE=audit_logs
-      
-      # ===== Environment =====
       - ENVIRONMENT=production
-      
-      # ===== Dashboard Configuration =====
       - DEFAULT_USER=Compliance_Officer_1
-      
     volumes:
-      # Shared video storage (READ-ONLY for dashboard)
       - ./n8n_factory/local_files:/data/files:ro
-      
     depends_on:
       n8n:
         condition: service_healthy
-    
     networks:
       - taxfix-network
-    
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # ============================================================================
+  # NEW ADMIN API (FastAPI - Backend)
+  # ============================================================================
+  admin-backend:
+    build:
+      context: .
+      dockerfile: admin_api/Dockerfile
+    container_name: taxfix-admin-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    networks:
+      - taxfix-network
+
+  # ============================================================================
+  # NEW ADMIN UI (Vite/React - Frontend)
+  # ============================================================================
+  admin-frontend:
+    build:
+      context: ./admin-frontend
+      dockerfile: Dockerfile
+    container_name: taxfix-admin-ui
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - admin-backend
+    networks:
+      - taxfix-network
 
 volumes:
   n8n_data:
