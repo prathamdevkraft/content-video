@@ -19,7 +19,8 @@ const StyledWrapper = styled.div`
   .type--C {
     --line_color: #000000;
     --back_color: #4ade80; 
-    --drow-scale: ${props => props.$compact ? 0.6 : 1.0};
+    --drow-scale: ${props => props.$compact ? 0.8 : 1.0};
+    --pos-shift: ${props => props.$compact ? '-20px' : '0px'};
   }
   .button {
     position: relative;
@@ -121,14 +122,14 @@ const StyledWrapper = styled.div`
   }
   .button__drow1 {
     top: -16px;
-    left: 40px;
+    left: calc(40px + var(--pos-shift));
     width: 32px;
     height: 0;
     transform: rotate(30deg) scale(var(--drow-scale));
   }
   .button__drow2 {
     top: 44px;
-    left: 77px;
+    left: calc(77px + var(--pos-shift));
     width: 32px;
     height: 0;
     transform: rotate(-127deg) scale(var(--drow-scale));
