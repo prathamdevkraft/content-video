@@ -1,8 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import sys
 import os
 import subprocess
+from supabase import create_client, Client
+import requests
 
 # Add parent directory to path to import dashboard script if needed
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -17,6 +20,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Supabase Client
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
+
+class TriggerRequest(BaseModel):
+    workflow_id: str = "taxfix-production"
 
 @app.get("/health")
 def health_check():
@@ -49,3 +60,43 @@ async def trigger_seed():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/active-queue")
+async def get_active_queue():
+    """
+    Fetches the latest 50 items from the content_queue.
+    """
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Supabase credentials not configured")
+        
+    try:
+        response = supabase.table("content_queue") \
+            .select("*") \
+            .order("created_at", desc=True) \
+            .limit(50) \
+            .execute()
+        return response.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/trigger-n8n")
+async def trigger_n8n(request: TriggerRequest):
+    """
+    Triggers the n8n Workflow via Webhook.
+    """
+    # URL of the n8n container in the docker network
+    # We call the 'production' webhook (without /test/)
+    N8N_WEBHOOK_URL = "http://taxfix-n8n-factory:5678/webhook/trigger"
+    
+    try:
+        # Fire and forget (or wait for ack)
+        # We send an empty JSON payload just to trigger it
+        response = requests.post(N8N_WEBHOOK_URL, json={"trigger": "admin-ui"})
+        
+        if response.status_code >= 400:
+             return {"status": "error", "detail": f"N8N responded with {response.status_code}: {response.text}"}
+             
+        return {"status": "success", "n8n_response": response.json() if response.content else "Triggered"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to call n8n: {str(e)}")
