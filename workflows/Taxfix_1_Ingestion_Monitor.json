@@ -180,7 +180,7 @@
         },
         {
             "parameters": {
-                "jsCode": "// Parse OpenAI Response & Flatten\nconst content = $json.message.content;\nlet parsed = {};\ntry {\n  parsed = JSON.parse(content);\n} catch(e) {\n  parsed = { relevant: false, reason: \"JSON Parse Fail\" };\n}\n\nreturn {\n  ...$json,\n  ...parsed\n};"
+                "jsCode": "// Parse OpenAI Response & Flatten (Handle Array)\nreturn $input.all().map(item => {\n  const content = item.json.message.content;\n  let parsed = {};\n  try {\n    parsed = JSON.parse(content);\n  } catch(e) {\n    parsed = { relevant: false, reason: \"JSON Parse Fail\" };\n  }\n  return {\n    json: {\n      ...item.json,\n      ...parsed\n    }\n  };\n});"
             },
             "name": "Parse AI Response",
             "type": "n8n-nodes-base.code",
