@@ -1,0 +1,134 @@
+{
+    "name": "Taxfix_1_Ingestion_Monitor",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "hours"
+                        }
+                    ]
+                }
+            },
+            "name": "Schedule Trigger",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ],
+            "id": "schedule-trigger"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Mock RSS Feed Fetch\n// Simulating checking Bundesfinanzministerium or HMRC\nreturn [\n  {\n    json: {\n      title: \"New Tax Bracket Adjustments 2025\",\n      link: \"https://bundesfinanzministerium.de/tax-brackets-2025\",\n      summary: \"The government announces shifts in tax brackets to combat inflation creep.\",\n      pubDate: new Date().toISOString()\n    }\n  }\n];"
+            },
+            "name": "Mock RSS Source",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ],
+            "id": "mock-rss"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Mock AI Relevance Filter\n// Checks if the news is relevant for Taxfix audience\nreturn {\n  topic: $json.title,\n  source_url: $json.link,\n  relevant: true,\n  confidence: 0.95,\n  platform: \"TikTok\" // Auto-assigned\n};"
+            },
+            "name": "AI Filter",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ],
+            "id": "ai-filter"
+        },
+        {
+            "parameters": {
+                "operation": "insert",
+                "table": {
+                    "__rl": true,
+                    "value": "content_queue",
+                    "mode": "name"
+                },
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "topic": "={{ $json.topic }}",
+                        "source_url": "={{ $json.source_url }}",
+                        "status": "PENDING_GENERATION",
+                        "platform": "={{ $json.platform }}",
+                        "compliance_score": 0.00 // Intentionally 0 until Factory runs
+                    }
+                }
+            },
+            "name": "Add to Queue",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "supabase_creds",
+                    "name": "Supabase DB"
+                }
+            },
+            "id": "add-queue"
+        },
+        {
+            "parameters": {
+                "content": "## Ingestion Monitor (Phase 3)\n\nSimulates monitoring external sources:\n\n1. **Schedule**: Runs hourly.\n2. **RSS Source**: Mocks fetching tax news.\n3. **AI Filter**: Determines relevance.\n4. **Add to Queue**: Inserts into DB -> Triggers Factory.\n",
+                "height": 300,
+                "width": 500
+            },
+            "name": "Documentation",
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                300,
+                100
+            ],
+            "id": "doc-note"
+        }
+    ],
+    "connections": {
+        "Schedule Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Mock RSS Source",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mock RSS Source": {
+            "main": [
+                [
+                    {
+                        "node": "AI Filter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Filter": {
+            "main": [
+                [
+                    {
+                        "node": "Add to Queue",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
