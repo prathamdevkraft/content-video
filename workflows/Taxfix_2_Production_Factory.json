@@ -14,19 +14,147 @@
         },
         {
             "parameters": {
-                "content": "## Taxfix Production Factory (Phase 1)\n\nThis workflow implements the 3-Step Video Generation:\n\n1. **Get Job**: Fetch `PENDING_GENERATION` from `content_queue`.\n2. **Generate**: OpenAI (Script) -> Edge-TTS (Audio) -> Editly (Video).\n3. **Update**: Set `status` to `PENDING_REVIEW`.\n\n**Setup Steps:**\n1. Add Supabase Node to fetch data.\n2. Add OpenAI Node for scripting.\n3. Add Execute Command Node for `edge-tts`.\n4. Add Execute Command Node for `editly`.\n5. Add Supabase Node to update status.",
-                "height": 400,
-                "width": 500
+                "operation": "executeQuery",
+                "query": "SELECT * FROM content_queue WHERE status = 'PENDING_GENERATION' LIMIT 1;"
             },
-            "name": "Instructions",
+            "name": "Get Pending Job",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "supabase_creds",
+                    "name": "Supabase DB"
+                }
+            },
+            "id": "get-job"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Mock OpenAI Script Generation\nreturn {\n  script_structure: {\n    hook: \"Did you know you can claim home office costs?\",\n    body: \"New tax rules for 2024 allow a flat rate deduction even if you don't have a dedicated room. You can claim 6 euros per day for up to 210 days.\",\n    cta: \"Check the link in bio for the official BMF guide!\"\n  },\n  social_metrics: {\n    caption: \"Home Office Pauschale 2024 explained! 🏠💰 #Taxfix #Steuertipps\",\n    hashtags: [\"#HomeOffice\", \"#Steuern\", \"#2024\"]\n  }\n};"
+            },
+            "name": "Mock GenAI",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ],
+            "id": "mock-genai"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Mock RAG Compliance Check\nreturn {\n  compliance_score: 0.92,\n  validations: {\n    checks: [\n      \"Verified against EStG § 4 Abs. 5 Nr. 6b\",\n      \"No financial advice detected\",\n      \"Tone is professional\"\n    ],\n    rag_notes: \"Citation found in BMF letter dated 2023-12-15 regarding Home Office Pauschale increase.\"\n  }\n};"
+            },
+            "name": "Mock RAG",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ],
+            "id": "mock-rag"
+        },
+        {
+            "parameters": {
+                "operation": "update",
+                "table": {
+                    "__rl": true,
+                    "value": "content_queue",
+                    "mode": "name"
+                },
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "status": "PENDING_REVIEW",
+                        "compliance_score": "={{ $json.compliance_score }}",
+                        "script_structure": "={{ JSON.stringify($json.script_structure) }}",
+                        "validations": "={{ JSON.stringify($json.validations) }}",
+                        "social_metrics": "={{ JSON.stringify($json.social_metrics) }}"
+                    },
+                    "matchingColumns": [
+                        "id"
+                    ]
+                }
+            },
+            "name": "Update DB",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 1,
+            "position": [
+                1050,
+                300
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "supabase_creds",
+                    "name": "Supabase DB"
+                }
+            },
+            "id": "update-db"
+        },
+        {
+            "parameters": {
+                "content": "## Mock Factory (Phase 2)\n\nThis workflow simulates the full pipeline:\n\n1. **Get Job**: Fetches pending job.\n2. **Mock GenAI**: Returns static script/json.\n3. **Mock RAG**: Returns 0.92 score + validations.\n4. **Update DB**: Saves to content_queue.\n\n**Run this to populate Dashboard Tabs 2 & 3!**",
+                "height": 300,
+                "width": 600
+            },
+            "name": "Phase 2 Info",
             "type": "n8n-nodes-base.stickyNote",
             "typeVersion": 1,
             "position": [
-                100,
+                400,
                 100
             ],
-            "id": "sticky-note"
+            "id": "info-note"
         }
     ],
-    "connections": {}
+    "connections": {
+        "Manual Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Get Job",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Job": {
+            "main": [
+                [
+                    {
+                        "node": "Mock GenAI",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mock GenAI": {
+            "main": [
+                [
+                    {
+                        "node": "Mock RAG",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mock RAG": {
+            "main": [
+                [
+                    {
+                        "node": "Update DB",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
 }
