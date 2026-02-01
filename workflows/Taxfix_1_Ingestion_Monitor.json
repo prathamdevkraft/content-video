@@ -22,7 +22,7 @@
         },
         {
             "parameters": {
-                "url": "https://www.bundesfinanzministerium.de/Content/DE/RSS/Steuern/steuern.xml",
+                "url": "https://www.tagesschau.de/wirtschaft/index~rss2.xml",
                 "options": {
                     "response": {
                         "response": {
@@ -34,73 +34,65 @@
                     "parameters": [
                         {
                             "name": "User-Agent",
-                            "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                            "value": "Mozilla/5.0 (compatible; TaxfixBot/1.0;)"
                         }
                     ]
                 }
             },
-            "name": "Fetch BMF (HTTP)",
+            "name": "Fetch Tagesschau",
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 3,
             "position": [
                 450,
                 200
             ],
-            "id": "fetch-bmf-http"
+            "id": "fetch-tagesschau"
         },
         {
             "parameters": {
-                "url": "https://www.finanztip.de/feed/",
+                "url": "https://www.presseportal.de/rss/finanzen.rss2",
                 "options": {
                     "response": {
                         "response": {
                             "responseFormat": "text"
                         }
                     }
-                },
-                "headerParameters": {
-                    "parameters": [
-                        {
-                            "name": "User-Agent",
-                            "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                        }
-                    ]
                 }
             },
-            "name": "Fetch Finanztip (HTTP)",
+            "name": "Fetch Presseportal",
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 3,
             "position": [
                 450,
                 400
             ],
-            "id": "fetch-finanztip-http"
+            "id": "fetch-presseportal"
         },
         {
             "parameters": {
-                "jsCode": "// Simple XML Regex Parser for BMF\n// Because built-in nodes struggle with strict XML\nconst xml = $json.data || '';\nconst items = [];\n// Extract items\nconst itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\nlet match;\nwhile ((match = itemRegex.exec(xml)) !== null) {\n  const content = match[1];\n  const title = (content.match(/<title>([\\s\\S]*?)<\\/title>/) || [])[1] || '';\n  const link = (content.match(/<link>([\\s\\S]*?)<\\/link>/) || [])[1] || '';\n  const desc = (content.match(/<description>([\\s\\S]*?)<\\/description>/) || [])[1] || '';\n  // Unescape CDATA if present\n  const cleanTitle = title.replace('<![CDATA[', '').replace(']]>', '').trim();\n  const cleanLink = link.trim();\n  const cleanDesc = desc.replace('<![CDATA[', '').replace(']]>', '').trim();\n\n  if (cleanTitle) {\n    items.push({\n      json: {\n        title: cleanTitle,\n        link: cleanLink,\n        contentSnippet: cleanDesc,\n        source: 'BMF'\n      }\n    });\n  }\n}\nreturn items;"
+                "jsCode": "// Robust RSS Parser (Regex)\nconst xml = $json.data || '';\nconst items = [];\n// Extract items\nconst itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\nlet match;\nwhile ((match = itemRegex.exec(xml)) !== null) {\n  const content = match[1];\n  const title = (content.match(/<title>([\\s\\S]*?)<\\/title>/) || [])[1] || '';\n  const link = (content.match(/<link>([\\s\\S]*?)<\\/link>/) || [])[1] || '';\n  // Handle CDATA or plain text\n  const cleanTitle = title.replace('<![CDATA[', '').replace(']]>', '').trim();\n  const cleanLink = link.replace('<![CDATA[', '').replace(']]>', '').trim();\n  \n  if (cleanTitle && cleanLink) {\n    items.push({\n      json: {\n        title: cleanTitle,\n        link: cleanLink,\n        source: 'Tagesschau'\n      }\n    });\n  }\n}\nreturn items;"
             },
-            "name": "Parse BMF XML",
+            "name": "Parse Tagesschau",
             "type": "n8n-nodes-base.code",
             "typeVersion": 1,
             "position": [
                 600,
                 200
             ],
-            "id": "parse-bmf"
+            "id": "parse-tagesschau"
         },
         {
             "parameters": {
-                "jsCode": "// Simple XML Regex Parser for Finanztip\nconst xml = $json.data || '';\nconst items = [];\nconst itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\nlet match;\nwhile ((match = itemRegex.exec(xml)) !== null) {\n  const content = match[1];\n  const title = (content.match(/<title>([\\s\\S]*?)<\\/title>/) || [])[1] || '';\n  const link = (content.match(/<link>([\\s\\S]*?)<\\/link>/) || [])[1] || '';\n  const desc = (content.match(/<description>([\\s\\S]*?)<\\/description>/) || [])[1] || '';\n  \n  const cleanTitle = title.replace('<![CDATA[', '').replace(']]>', '').trim();\n  const cleanLink = link.trim();\n  const cleanDesc = desc.replace('<![CDATA[', '').replace(']]>', '').trim();\n\n  if (cleanTitle) {\n    items.push({\n      json: {\n        title: cleanTitle,\n        link: cleanLink,\n        contentSnippet: cleanDesc,\n        source: 'Finanztip'\n      }\n    });\n  }\n}\nreturn items;"
+                "jsCode": "// Robust RSS Parser (Regex)\nconst xml = $json.data || '';\nconst items = [];\nconst itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\nlet match;\nwhile ((match = itemRegex.exec(xml)) !== null) {\n  const content = match[1];\n  const title = (content.match(/<title>([\\s\\S]*?)<\\/title>/) || [])[1] || '';\n  const link = (content.match(/<link>([\\s\\S]*?)<\\/link>/) || [])[1] || '';\n  \n  const cleanTitle = title.replace('<![CDATA[', '').replace(']]>', '').trim();\n  const cleanLink = link.replace('<![CDATA[', '').replace(']]>', '').trim();\n\n  if (cleanTitle && cleanLink) {\n    items.push({\n      json: {\n        title: cleanTitle,\n        link: cleanLink,\n        source: 'Presseportal'\n      }\n    });\n  }\n}\nreturn items;"
             },
-            "name": "Parse Finanztip XML",
+            "name": "Parse Presseportal",
             "type": "n8n-nodes-base.code",
             "typeVersion": 1,
             "position": [
                 600,
                 400
             ],
-            "id": "parse-finanztip"
+            "id": "parse-presseportal"
         },
         {
             "parameters": {
@@ -124,11 +116,11 @@
                     "values": [
                         {
                             "role": "system",
-                            "content": "You are a tax content analyst for Taxfix (Target: Young employees/students 25-35).\nDecide if this news item is relevant for TikTok/Instagram content.\n\nRELEVANT: Deductions, Deadlines, Benefits, Home Office, Crypto, ETF, Student Tips.\nIRRELEVANT: Corporate tax, Bureaucracy, Stats, International Treaties.\n\nReturn JSON:\n{\n  \"relevant\": true/false,\n  \"topic\": \"Engaging German title\",\n  \"confidence\": 0.0-1.0,\n  \"platform\": \"TikTok\",\n  \"reasoning\": \"Why relevant?\"\n}"
+                            "content": "You are a tax content analyst for Taxfix (Target: Young employees/students 25-35).\nDecide if this news item is relevant for TikTok/Instagram content.\n\nRELEVANT: Deductions, Deadlines, Benefits, Home Office, Crypto, ETF, Student Tips.\nIRRELEVANT: Corporate tax, Bureaucracy, Stats, International Treaties, General Market News.\n\nReturn JSON:\n{\n  \"relevant\": true/false,\n  \"topic\": \"Engaging German title\",\n  \"confidence\": 0.0-1.0,\n  \"platform\": \"TikTok\",\n  \"reasoning\": \"Why relevant?\"\n}"
                         },
                         {
                             "role": "user",
-                            "content": "News Item:\nTitle: {{ $json.title }}\nSnippet: {{ $json.contentSnippet }}\nLink: {{ $json.link }}\nAnalyze:"
+                            "content": "News Item:\nTitle: {{ $json.title }}\nLink: {{ $json.link }}\nAnalyze:"
                         }
                     ]
                 }
@@ -276,41 +268,41 @@
             "main": [
                 [
                     {
-                        "node": "Fetch BMF (HTTP)",
+                        "node": "Fetch Tagesschau",
                         "type": "main",
                         "index": 0
                     },
                     {
-                        "node": "Fetch Finanztip (HTTP)",
+                        "node": "Fetch Presseportal",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Fetch BMF (HTTP)": {
+        "Fetch Tagesschau": {
             "main": [
                 [
                     {
-                        "node": "Parse BMF XML",
+                        "node": "Parse Tagesschau",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Fetch Finanztip (HTTP)": {
+        "Fetch Presseportal": {
             "main": [
                 [
                     {
-                        "node": "Parse Finanztip XML",
+                        "node": "Parse Presseportal",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Parse BMF XML": {
+        "Parse Tagesschau": {
             "main": [
                 [
                     {
@@ -321,7 +313,7 @@
                 ]
             ]
         },
-        "Parse Finanztip XML": {
+        "Parse Presseportal": {
             "main": [
                 [
                     {
