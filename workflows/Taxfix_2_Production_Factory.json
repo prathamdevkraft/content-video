@@ -85,16 +85,100 @@
         },
         {
             "parameters": {
-                "jsCode": "// Mock RAG Compliance Check\n// Pass through previous data\nconst input = $json;\n\nreturn {\n  ...input,\n  status: \"PENDING_REVIEW\", // Set new status for Auto-Map\n  compliance_score: 0.92,\n  validations: {\n    checks: [\n      \"Verified against EStG \u00A7 4 Abs. 5 Nr. 6b\",\n      \"No financial advice detected\",\n      \"Tone is professional\"\n    ],\n    rag_notes: \"Citation found in BMF letter dated 2023-12-15 regarding Home Office Pauschale increase.\"\n  }\n};"
+                "resource": "embeddings",
+                "model": "text-embedding-3-small",
+                "text": "={{ $json.script_structure.body }}",
+                "jsonOutput": true
             },
-            "name": "Mock RAG",
-            "type": "n8n-nodes-base.code",
+            "name": "Create Embeddings",
+            "type": "n8n-nodes-base.openAi",
             "typeVersion": 1,
             "position": [
                 850,
                 300
             ],
-            "id": "mock-rag"
+            "id": "create-embeddings",
+            "credentials": {
+                "openAiApi": {
+                    "id": "openai_account",
+                    "name": "OpenAI account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "select * from match_tax_laws( '{{ $json.embedding }}', 0.5, 3 )",
+                "jsonOutput": true
+            },
+            "name": "Vector Search",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                950,
+                300
+            ],
+            "id": "vector-search",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "supabase_api_creds",
+                    "name": "Supabase API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Merge Retrieved Docs for Context\nconst docs = $items.map(i => i.json.content).join('\\n---\\n');\n// We need to pass the ORIGINAL script data to the next node too. \n// In n8n, this is best done by accessing the 'Parse AI Response' node directly in the next OpenAI node.\nreturn { docs };"
+            },
+            "name": "Merge Context",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                1050,
+                300
+            ],
+            "id": "merge-context"
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "model": "gpt-4o",
+                "jsonOutput": true,
+                "messages": {
+                    "values": [
+                        {
+                            "content": "You are a Compliance Officer. Check the following video script for accuracy against the provided Tax Laws.\n\nSCRIPT:\n{{ $('Parse AI Response').item.json.script_structure.body }}\n\nTAX LAWS:\n{{ $json.docs }}\n\nReturn strict JSON:\n- compliance_score: (0.0 to 1.0)\n- validations: { \"checks\": [\"Checked against law X...\"], \"rag_notes\": \"Found law X matching...\" }"
+                        }
+                    ]
+                }
+            },
+            "name": "Check Compliance",
+            "type": "n8n-nodes-base.openAi",
+            "typeVersion": 1,
+            "position": [
+                1150,
+                300
+            ],
+            "id": "check-compliance",
+            "credentials": {
+                "openAiApi": {
+                    "id": "openai_account",
+                    "name": "OpenAI account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Prepare Final Update Payload\n// Merge everything: ID, Script (from Parse AI), Compliance (from Check Compliance)\nconst scriptData = $('Parse AI Response').item.json;\nconst complianceData = JSON.parse($json.message.content);\n\nreturn {\n  ...scriptData,\n  ...complianceData,\n  status: \"PENDING_REVIEW\"\n};"
+            },
+            "name": "Prepare Update",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                1250,
+                300
+            ],
+            "id": "prepare-update"
         },
         {
             "parameters": {
@@ -184,14 +268,58 @@
             "main": [
                 [
                     {
-                        "node": "Mock RAG",
+                        "node": "Create Embeddings",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Mock RAG": {
+        "Create Embeddings": {
+            "main": [
+                [
+                    {
+                        "node": "Vector Search",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Vector Search": {
+            "main": [
+                [
+                    {
+                        "node": "Merge Context",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Merge Context": {
+            "main": [
+                [
+                    {
+                        "node": "Check Compliance",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Compliance": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Update",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Update": {
             "main": [
                 [
                     {
