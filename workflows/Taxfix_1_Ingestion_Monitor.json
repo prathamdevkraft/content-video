@@ -61,7 +61,7 @@
                         "source_url": "={{ $json.source_url }}",
                         "status": "PENDING_GENERATION",
                         "platform": "={{ $json.platform }}",
-                        "compliance_score": 0.00 // Intentionally 0 until Factory runs
+                        "compliance_score": 0.00
                     }
                 }
             },

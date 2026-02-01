@@ -67,7 +67,7 @@
                     "value": {
                         "status": "PUBLISHED",
                         "published_url": "={{ $json.published_url }}",
-                        "retry_count": 0 // Reset retries on success
+                        "retry_count": 0
                     },
                     "matchingColumns": [
                         "id"
