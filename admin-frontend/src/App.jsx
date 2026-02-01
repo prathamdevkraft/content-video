@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
-import { Database, FileText, CheckCircle, AlertCircle, Play, Server, Clock, Search } from 'lucide-react';
+import { Database, FileText, CheckCircle, AlertCircle, Play, Server, Clock, Search, BarChart2 } from 'lucide-react';
 import NavigationButton from './components/NavigationButton';
 import RefreshButton from './components/RefreshButton';
 import NewsFeed from './components/NewsFeed';
@@ -311,6 +311,19 @@ function App() {
         <Description>Discover topics and generate viral scripts.</Description>
         <ActionButton style={{ background: '#000' }}>
           OPEN NEW CONTENT
+        </ActionButton>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <BarChart2 size={32} color="#000000" strokeWidth={3} />
+          <CardTitle>Analytics & Compliance</CardTitle>
+        </CardHeader>
+        <Description>
+          View audit logs, compliance scores, and performance metrics (Streamlit).
+        </Description>
+        <ActionButton onClick={() => window.open('http://13.200.99.186:8501', '_blank')} style={{ background: '#8b5cf6' }}>
+          OPEN DASHBOARD ↗
         </ActionButton>
       </Card>
     </MainGrid>
