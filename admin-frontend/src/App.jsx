@@ -4,6 +4,9 @@ import axios from 'axios';
 import { Database, FileText, CheckCircle, AlertCircle, Play, Server, Clock, Search } from 'lucide-react';
 import NavigationButton from './components/NavigationButton';
 import RefreshButton from './components/RefreshButton';
+import NewsFeed from './components/NewsFeed';
+import ScriptEditor from './components/ScriptEditor';
+import VideoPlayer from './components/VideoPlayer';
 
 const AppWrapper = styled.div`
   min-height: 100vh;
@@ -175,63 +178,206 @@ const StatusTag = styled.span`
   font-size: 12px;
 `;
 
-// API URL (Auto-switches based on env, but hardcoded to IP for now as per previous step)
+// API URL
 const API_BASE = 'http://13.200.99.186:8020';
 
 function App() {
-  const [view, setView] = useState('home'); // 'home' | 'dashboard'
+  const [view, setView] = useState('home'); // 'home', 'dashboard', 'news', 'editor', 'publish'
   const [loading, setLoading] = useState(false);
   const [seedLogs, setSeedLogs] = useState(null);
   const [ingestionLogs, setIngestionLogs] = useState(null);
   const [queueData, setQueueData] = useState([]);
+  const [selectedJob, setSelectedJob] = useState(null);
 
-  // Seeding
+  // --- API HANDLERS ---
   const handleSeed = async () => {
     setLoading(true);
-    setSeedLogs("Initiating Knowledge Base Seeding...\nConnecting to Supabase...");
+    setSeedLogs("Initiating Seeding...");
     try {
-      const response = await axios.post(`${API_BASE}/seed-knowledge`);
-      setSeedLogs((prev) => prev + "\n" + (response.data.output || "Success!"));
-    } catch (error) {
-      setSeedLogs((prev) => prev + "\n❌ Error: " + (error.response?.data?.detail || error.message));
-    } finally {
-      setLoading(false);
-    }
+      const res = await axios.post(`${API_BASE}/seed-knowledge`);
+      setSeedLogs(prev => prev + "\n" + (res.data.output || "Success!"));
+    } catch (e) {
+      setSeedLogs(prev => prev + "\nError: " + e.message);
+    } finally { setLoading(false); }
   };
 
-  // Trigger n8n
   const handleTriggerN8n = async () => {
     setLoading(true);
-    setIngestionLogs("Triggering n8n Ingestion Workflow...");
+    setIngestionLogs("Triggering Ingestion...");
     try {
-      const response = await axios.post(`${API_BASE}/trigger-n8n`, { workflow_id: 'production' });
-      setIngestionLogs((prev) => prev + "\n✅ Triggered! " + JSON.stringify(response.data));
-      // Wait a bit then refresh queue
-      setTimeout(fetchQueue, 2000);
-    } catch (error) {
-      setIngestionLogs((prev) => prev + "\n❌ Error: " + (error.response?.data?.detail || error.message));
-    } finally {
-      setLoading(false);
-    }
+      await axios.post(`${API_BASE}/trigger-n8n`, { workflow_id: 'production' });
+      setIngestionLogs(prev => prev + "\nTriggered!");
+    } catch (e) {
+      setIngestionLogs(prev => prev + "\nError: " + e.message);
+    } finally { setLoading(false); }
   };
 
-  // Fetch Queue
   const fetchQueue = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/active-queue`);
-      setQueueData(response.data || []);
+      const res = await axios.get(`${API_BASE}/active-queue`);
+      setQueueData(res.data || []);
+    } catch (e) { console.error(e); }
+  };
+
+  // --- NEW WORKFLOW HANDLERS ---
+
+  const handleGenerateScript = async (payload) => {
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API_BASE}/generate-script`, payload);
+      alert(`Script Generation Started! Job ID: ${res.data.job.id}`);
+      fetchQueue();
+      setView('dashboard'); // Go back to see it pending
     } catch (e) {
-      console.error("Failed to fetch queue", e);
-    }
+      alert("Error: " + e.message);
+    } finally { setLoading(false); }
+  };
+
+  const handleApproveScript = async (payload) => {
+    setLoading(true);
+    try {
+      await axios.post(`${API_BASE}/approve-script`, payload);
+      alert("Script Approved! Video rendering started.");
+      fetchQueue();
+      setView('dashboard');
+    } catch (e) {
+      alert("Error: " + e.message);
+    } finally { setLoading(false); }
+  };
+
+  const handlePublishVideo = async (payload) => {
+    setLoading(true);
+    try {
+      await axios.post(`${API_BASE}/publish-video`, payload);
+      alert("Publishing Triggered!");
+      fetchQueue();
+      setView('dashboard');
+    } catch (e) {
+      alert("Error: " + e.message);
+    } finally { setLoading(false); }
+  };
+
+  const openEditor = (job) => {
+    setSelectedJob(job);
+    setView('editor');
+  };
+
+  const openPlayer = (job) => {
+    setSelectedJob(job);
+    setView('publish');
   };
 
   useEffect(() => {
     if (view === 'dashboard') {
       fetchQueue();
-      const interval = setInterval(fetchQueue, 5000); // Poll every 5s
+      const interval = setInterval(fetchQueue, 5000);
       return () => clearInterval(interval);
     }
   }, [view]);
+
+  // --- RENDERERS ---
+
+  const renderHome = () => (
+    <MainGrid>
+      <Card>
+        <CardHeader>
+          <Database size={32} color="#000000" strokeWidth={3} />
+          <CardTitle>Knowledge Base</CardTitle>
+        </CardHeader>
+        <Description>Manage Vector Search (RAG).</Description>
+        <ActionButton onClick={handleSeed} disabled={loading} style={{ background: '#3b82f6' }}>
+          {loading ? '...' : 'SEED DATABASE'}
+        </ActionButton>
+        {seedLogs && <LogBox>{seedLogs}</LogBox>}
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <Clock size={32} color="#000000" strokeWidth={3} />
+          <CardTitle>News Ingestion</CardTitle>
+        </CardHeader>
+        <Description>Trigger daily RSS ingestion.</Description>
+        <ActionButton onClick={handleTriggerN8n} disabled={loading} style={{ background: '#f59e0b' }}>
+          RUN PIPELINE
+        </ActionButton>
+        {ingestionLogs && <LogBox>{ingestionLogs}</LogBox>}
+      </Card>
+
+      <Card onClick={() => setView('news')} style={{ cursor: 'pointer' }}>
+        <CardHeader>
+          <Search size={32} color="#000000" strokeWidth={3} />
+          <CardTitle>Content Factory</CardTitle>
+        </CardHeader>
+        <Description>Discover topics and generate viral scripts.</Description>
+        <ActionButton style={{ background: '#000' }}>
+          OPEN NEW CONTENT
+        </ActionButton>
+      </Card>
+    </MainGrid>
+  );
+
+  const renderDashboard = () => (
+    <div style={{ width: '100%', maxWidth: '1200px' }}>
+      <Card style={{ minHeight: '600px' }}>
+        <CardHeader>
+          <FileText size={32} color="#000000" strokeWidth={3} />
+          <CardTitle>Content Queue (Live)</CardTitle>
+        </CardHeader>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <ActionButton onClick={() => setView('news')} style={{ width: 'auto', padding: '12px 24px', background: '#000', fontSize: '14px' }}>
+              + NEW TOPIC
+            </ActionButton>
+          </div>
+          <RefreshButton onClick={fetchQueue} />
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <Table>
+            <thead>
+              <tr>
+                <th>Topic</th>
+                <th>Platform</th>
+                <th>Status</th>
+                <th>Created At</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {queueData.length === 0 ? (
+                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '40px' }}>No items.</td></tr>
+              ) : (
+                queueData.map((row) => (
+                  <tr key={row.id}>
+                    <td style={{ fontWeight: '600' }}>{row.topic}</td>
+                    <td>{row.platform}</td>
+                    <td><StatusTag>{row.status || 'PENDING'}</StatusTag></td>
+                    <td>{new Date(row.created_at).toLocaleString()}</td>
+                    <td>
+                      {/* Dynamic Actions based on Status */}
+                      {row.status === 'PENDING_REVIEW' && (
+                        <button onClick={() => openEditor(row)} style={{ fontWeight: 800, cursor: 'pointer', background: '#efefef', border: '2px solid black', padding: '6px 12px' }}>
+                          REVIEW SCRIPT →
+                        </button>
+                      )}
+                      {(row.status === 'READY_TO_PUBLISH' || row.status === 'PUBLISHED') && (
+                        <button onClick={() => openPlayer(row)} style={{ fontWeight: 800, cursor: 'pointer', background: '#4ade80', border: '2px solid black', padding: '6px 12px' }}>
+                          {row.status === 'PUBLISHED' ? 'VIEW RESULTS' : 'PUBLISH VIDEO →'}
+                        </button>
+                      )}
+                      {/* Fallback for other statuses */}
+                      {!['PENDING_REVIEW', 'READY_TO_PUBLISH', 'PUBLISHED'].includes(row.status) && (
+                        <span style={{ color: '#999', fontSize: '12px' }}>Processing...</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </Table>
+        </div>
+      </Card>
+    </div>
+  );
 
   return (
     <AppWrapper>
@@ -240,100 +386,40 @@ function App() {
           <Server size={32} color="#000000" strokeWidth={3} />
           <Title>Taxfix Admin</Title>
         </div>
-
         <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
           <NavigationButton
             label={view === 'home' ? 'DASHBOARD' : 'HOME'}
             onClick={() => setView(view === 'home' ? 'dashboard' : 'home')}
           />
-          <StatusBadge>V2.1 LIVE</StatusBadge>
+          <StatusBadge>V4.0 FACTORY</StatusBadge>
         </div>
       </Header>
 
-      {view === 'home' ? (
-        <MainGrid>
-          <Card>
-            <CardHeader>
-              <Database size={32} color="#000000" strokeWidth={3} />
-              <CardTitle>Knowledge Base</CardTitle>
-            </CardHeader>
+      {/* VIEW ROUTER */}
+      {view === 'home' && renderHome()}
+      {view === 'dashboard' && renderDashboard()}
 
-            <Description>
-              Manage the Vector Search database (RAG).
-              Generate embeddings for the core German Tax Laws (EStG) to populate 'tax_laws'.
-            </Description>
-
-            <ActionButton onClick={handleSeed} disabled={loading} style={{ background: '#3b82f6' }}>
-              {loading ? 'Processing...' : (
-                <><Play size={24} strokeWidth={3} /> SEED DATABASE</>
-              )}
-            </ActionButton>
-
-            {seedLogs && <LogBox>{seedLogs}</LogBox>}
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <Clock size={32} color="#000000" strokeWidth={3} />
-              <CardTitle>Ingestion Trigger</CardTitle>
-            </CardHeader>
-            <Description>
-              Manually trigger the daily news ingestion workflow (n8n).
-              Useful for testing the pipeline on-demand.
-            </Description>
-
-            <ActionButton onClick={handleTriggerN8n} disabled={loading} style={{ background: '#f59e0b' }}>
-              <Play size={24} strokeWidth={3} /> RUN PIPELINE
-            </ActionButton>
-
-            {ingestionLogs && <LogBox>{ingestionLogs}</LogBox>}
-          </Card>
-        </MainGrid>
-      ) : (
-        /* DASHBOARD VIEW */
+      {view === 'news' && (
         <div style={{ width: '100%', maxWidth: '1200px' }}>
-          <Card style={{ minHeight: '600px' }}>
-            <CardHeader>
-              <FileText size={32} color="#000000" strokeWidth={3} />
-              <CardTitle>Content Queue (Live)</CardTitle>
-            </CardHeader>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-              <Description>Real-time view of generated video scripts.</Description>
-              <RefreshButton onClick={fetchQueue} />
-            </div>
-
-            <div style={{ overflowX: 'auto' }}>
-              <Table>
-                <thead>
-                  <tr>
-                    <th>Topic</th>
-                    <th>Platform</th>
-                    <th>Confidence</th>
-                    <th>Status</th>
-                    <th>Created At</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {queueData.length === 0 ? (
-                    <tr><td colSpan="5" style={{ textAlign: 'center', padding: '40px' }}>No items in queue yet.</td></tr>
-                  ) : (
-                    queueData.map((row) => (
-                      <tr key={row.id}>
-                        <td style={{ fontWeight: '600' }}>{row.topic}</td>
-                        <td>{row.platform}</td>
-                        <td>{row.compliance_score}%</td>
-                        <td><StatusTag>{row.status || 'PENDING'}</StatusTag></td>
-                        <td>{new Date(row.created_at).toLocaleString()}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </Table>
-            </div>
-          </Card>
+          <div style={{ marginBottom: '20px', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => setView('dashboard')}>← Back to Dashboard</div>
+          <NewsFeed onGenerate={handleGenerateScript} />
         </div>
       )}
+
+      {view === 'editor' && selectedJob && (
+        <div style={{ width: '100%', maxWidth: '1400px' }}>
+          <div style={{ marginBottom: '20px', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => setView('dashboard')}>← Back to Dashboard</div>
+          <ScriptEditor job={selectedJob} onApprove={handleApproveScript} />
+        </div>
+      )}
+
+      {view === 'publish' && selectedJob && (
+        <div style={{ width: '100%', maxWidth: '1000px' }}>
+          <div style={{ marginBottom: '20px', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => setView('dashboard')}>← Back to Dashboard</div>
+          <VideoPlayer job={selectedJob} onPublish={handlePublishVideo} />
+        </div>
+      )}
+
     </AppWrapper>
   );
 }
