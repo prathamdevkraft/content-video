@@ -111,13 +111,18 @@
         },
         {
             "parameters": {
-                "operation": "executeQuery",
-                "query": "select * from match_tax_laws( '{{ $json.data[0].embedding }}', 0.5, 3 )",
-                "jsonOutput": true
+                "method": "POST",
+                "url": "https://cqcsdghsbgivwpulfzfd.supabase.co/rest/v1/rpc/match_tax_laws",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "supabaseApi",
+                "sendBody": true,
+                "contentType": "json",
+                "body": "={{ JSON.stringify({\n  query_embedding: $json.data[0].embedding,\n  match_threshold: 0.5,\n  match_count: 3\n}) }}",
+                "options": {}
             },
             "name": "Vector Search",
-            "type": "n8n-nodes-base.supabase",
-            "typeVersion": 1,
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
             "position": [
                 950,
                 300
