@@ -35,7 +35,7 @@
         },
         {
             "parameters": {
-                "jsCode": "// Mock AI Relevance Filter\n// Checks if the news is relevant for Taxfix audience\nreturn {\n  topic: $json.title,\n  source_url: $json.link,\n  relevant: true,\n  confidence: 0.95,\n  platform: \"TikTok\" // Auto-assigned\n};"
+                "jsCode": "// Mock AI Relevance Filter\n// Checks if the news is relevant for Taxfix audience\nreturn {\n  topic: $json.title,\n  source_url: $json.link,\n  relevant: true,\n  confidence: 0.95,\n  platform: \"TikTok\",\n  status: \"PENDING_GENERATION\",\n  compliance_score: 0\n};"
             },
             "name": "AI Filter",
             "type": "n8n-nodes-base.code",
