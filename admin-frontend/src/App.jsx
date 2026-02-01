@@ -180,18 +180,19 @@ const API_BASE = 'http://13.200.99.186:8020';
 function App() {
   const [view, setView] = useState('home'); // 'home' | 'dashboard'
   const [loading, setLoading] = useState(false);
-  const [logs, setLogs] = useState(null);
+  const [seedLogs, setSeedLogs] = useState(null);
+  const [ingestionLogs, setIngestionLogs] = useState(null);
   const [queueData, setQueueData] = useState([]);
 
   // Seeding
   const handleSeed = async () => {
     setLoading(true);
-    setLogs("Initiating Knowledge Base Seeding...\nConnecting to Supabase...");
+    setSeedLogs("Initiating Knowledge Base Seeding...\nConnecting to Supabase...");
     try {
       const response = await axios.post(`${API_BASE}/seed-knowledge`);
-      setLogs((prev) => prev + "\n" + (response.data.output || "Success!"));
+      setSeedLogs((prev) => prev + "\n" + (response.data.output || "Success!"));
     } catch (error) {
-      setLogs((prev) => prev + "\n❌ Error: " + (error.response?.data?.detail || error.message));
+      setSeedLogs((prev) => prev + "\n❌ Error: " + (error.response?.data?.detail || error.message));
     } finally {
       setLoading(false);
     }
@@ -200,14 +201,14 @@ function App() {
   // Trigger n8n
   const handleTriggerN8n = async () => {
     setLoading(true);
-    setLogs("Triggering n8n Ingestion Workflow...");
+    setIngestionLogs("Triggering n8n Ingestion Workflow...");
     try {
       const response = await axios.post(`${API_BASE}/trigger-n8n`, { workflow_id: 'production' });
-      setLogs((prev) => prev + "\n✅ Triggered! " + JSON.stringify(response.data));
+      setIngestionLogs((prev) => prev + "\n✅ Triggered! " + JSON.stringify(response.data));
       // Wait a bit then refresh queue
       setTimeout(fetchQueue, 2000);
     } catch (error) {
-      setLogs((prev) => prev + "\n❌ Error: " + (error.response?.data?.detail || error.message));
+      setIngestionLogs((prev) => prev + "\n❌ Error: " + (error.response?.data?.detail || error.message));
     } finally {
       setLoading(false);
     }
@@ -267,7 +268,7 @@ function App() {
               )}
             </ActionButton>
 
-            {logs && <LogBox>{logs}</LogBox>}
+            {seedLogs && <LogBox>{seedLogs}</LogBox>}
           </Card>
 
           <Card>
@@ -283,6 +284,8 @@ function App() {
             <ActionButton onClick={handleTriggerN8n} disabled={loading} style={{ background: '#f59e0b' }}>
               <Play size={24} strokeWidth={3} /> RUN PIPELINE
             </ActionButton>
+
+            {ingestionLogs && <LogBox>{ingestionLogs}</LogBox>}
           </Card>
         </MainGrid>
       ) : (
