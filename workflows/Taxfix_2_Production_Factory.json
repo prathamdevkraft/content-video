@@ -72,36 +72,16 @@
             "parameters": {
                 "operation": "update",
                 "tableId": "content_queue",
+                "options": {
+                    "ignoreExtraFields": true
+                },
+                "autoMapInputData": true,
                 "filters": {
                     "conditions": [
                         {
                             "key": "id",
                             "value": "={{ $json.id }}",
                             "operator": "eq"
-                        }
-                    ]
-                },
-                "columnsUi": {
-                    "columnValues": [
-                        {
-                            "fieldId": "status",
-                            "fieldValue": "PENDING_REVIEW"
-                        },
-                        {
-                            "fieldId": "compliance_score",
-                            "fieldValue": "={{ $json.compliance_score }}"
-                        },
-                        {
-                            "fieldId": "script_structure",
-                            "fieldValue": "={{ JSON.stringify($json.script_structure) }}"
-                        },
-                        {
-                            "fieldId": "validations",
-                            "fieldValue": "={{ JSON.stringify($json.validations) }}"
-                        },
-                        {
-                            "fieldId": "social_metrics",
-                            "fieldValue": "={{ JSON.stringify($json.social_metrics) }}"
                         }
                     ]
                 }
