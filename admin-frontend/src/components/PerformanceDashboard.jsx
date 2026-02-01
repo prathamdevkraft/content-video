@@ -186,13 +186,13 @@ const PerformanceDashboard = () => {
                 <ChartCard style={{ flex: 1 }}>
                     <ChartTitle>Content Governance & Status</ChartTitle>
                     <ResponsiveContainer width="100%" height="85%">
-                        <PieChart>
+                        <PieChart margin={{ top: 20, right: 30, left: 30, bottom: 20 }}>
                             <Pie
                                 data={pieData}
                                 cx="50%"
                                 cy="50%"
-                                labelLine={false}
-                                outerRadius={120}
+                                labelLine={true}
+                                outerRadius={100}
                                 fill="#8884d8"
                                 dataKey="value"
                                 label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
