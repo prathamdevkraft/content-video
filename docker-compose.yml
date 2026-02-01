@@ -15,8 +15,8 @@ services:
     environment:
       # ===== Basic Authentication =====
       - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
-      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-changeme}
+      - N8N_BASIC_AUTH_USER=${N8N_USER:-pratham.singh@devkraft.in}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-Ey8F#Uzvh!5SeuM}
       
       # ===== Webhook & Timezone =====
       - WEBHOOK_URL=http://localhost:5678/
@@ -108,7 +108,7 @@ services:
     container_name: taxfix-admin-backend
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8020:8000"
     environment:
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_KEY=${SUPABASE_KEY}
@@ -126,7 +126,7 @@ services:
     container_name: taxfix-admin-ui
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "3005:80"
     depends_on:
       - admin-backend
     networks:
