@@ -22,29 +22,64 @@
         },
         {
             "parameters": {
-                "jsCode": "// Mock RSS Feed Fetch\n// Simulating checking Bundesfinanzministerium or HMRC\nreturn [\n  {\n    json: {\n      title: \"New Tax Bracket Adjustments 2025\",\n      link: \"https://bundesfinanzministerium.de/tax-brackets-2025\",\n      summary: \"The government announces shifts in tax brackets to combat inflation creep.\",\n      pubDate: new Date().toISOString()\n    }\n  }\n];"
+                "url": "https://www.bundesfinanzministerium.de/SiteGlobals/Functions/RSS/DE/Feed/RSS_Steuern.xml"
             },
-            "name": "Mock RSS Source",
-            "type": "n8n-nodes-base.code",
+            "name": "Fetch BMF News",
+            "type": "n8n-nodes-base.rssFeedRead",
             "typeVersion": 1,
             "position": [
                 450,
                 300
             ],
-            "id": "mock-rss"
+            "id": "fetch-rss"
         },
         {
             "parameters": {
-                "jsCode": "// Mock AI Relevance Filter\n// Checks if the news is relevant for Taxfix audience\nreturn {\n  topic: $json.title,\n  source_url: $json.link,\n  relevant: true,\n  confidence: 0.95,\n  platform: \"TikTok\",\n  status: \"PENDING_GENERATION\",\n  compliance_score: 0\n};"
+                "resource": "chat",
+                "model": "gpt-4o",
+                "jsonOutput": true,
+                "messages": {
+                    "values": [
+                        {
+                            "content": "Analyze this German tax news item for Taxfix (App for simple tax returns).\n\nTitle: {{ $json.title }}\nSnippet: {{ $json.contentSnippet }}\n\nIs this relevant for a young German employee/student (25-35yo)?\n- Ignore corporate tax, complex master data, or bureaucratic announcements.\n- Focus on: Deductions, Deadlines, New Benefits, Home Office, Crypto, ETF.\n\nReturn JSON:\n{\n  \"relevant\": true/false,\n  \"topic\": \"Short engaging topic title (keep in German)\",\n  \"confidence\": 0.9,\n  \"platform\": \"TikTok\"\n}"
+                        }
+                    ]
+                }
             },
-            "name": "AI Filter",
-            "type": "n8n-nodes-base.code",
+            "name": "Analyze Relevance",
+            "type": "n8n-nodes-base.openAi",
             "typeVersion": 1,
             "position": [
                 650,
                 300
             ],
-            "id": "ai-filter"
+            "id": "analyze-relevance",
+            "credentials": {
+                "openAiApi": {
+                    "id": "openai_account",
+                    "name": "OpenAI account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.relevant }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "name": "Filter Relevant",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ],
+            "id": "filter-relevant"
         },
         {
             "parameters": {
@@ -58,7 +93,7 @@
                         },
                         {
                             "fieldId": "source_url",
-                            "fieldValue": "={{ $json.source_url }}"
+                            "fieldValue": "={{ $('Fetch BMF News').item.json.link }}"
                         },
                         {
                             "fieldId": "status",
@@ -79,28 +114,28 @@
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                850,
+                1050,
                 300
             ],
+            "id": "add-queue",
             "credentials": {
                 "supabaseApi": {
                     "id": "supabase_api_creds",
                     "name": "Supabase API"
                 }
-            },
-            "id": "add-queue"
+            }
         },
         {
             "parameters": {
-                "content": "## Ingestion Monitor (Phase 3)\n\nSimulates monitoring external sources:\n\n1. **Schedule**: Runs hourly.\n2. **RSS Source**: Mocks fetching tax news.\n3. **AI Filter**: Determines relevance.\n4. **Add to Queue**: Inserts into DB (Supabase API) -> Triggers Factory.\n",
-                "height": 300,
-                "width": 500
+                "content": "## Real Data Ingestion (Phase 3)\n\n1. **Fetch BMF News**: Connects to the official German Ministry of Finance RSS.\n2. **Analyze Relevance**: OpenAI (GPT-4o) reads the news and decides if it's content-worthy.\n3. **Filter**: Only passes \"Relevant\" items.\n4. **Add to Queue**: Pushes real topics to the Factory.\n\n*To add other languages (UK/ES), simply add 'Fetch HMRC' or 'Fetch Agencia' nodes.*",
+                "height": 350,
+                "width": 550
             },
             "name": "Documentation",
             "type": "n8n-nodes-base.stickyNote",
             "typeVersion": 1,
             "position": [
-                300,
+                350,
                 100
             ],
             "id": "doc-note"
@@ -111,25 +146,36 @@
             "main": [
                 [
                     {
-                        "node": "Mock RSS Source",
+                        "node": "Fetch BMF News",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Mock RSS Source": {
+        "Fetch BMF News": {
             "main": [
                 [
                     {
-                        "node": "AI Filter",
+                        "node": "Analyze Relevance",
                         "type": "main",
                         "index": 0
                     }
                 ]
             ]
         },
-        "AI Filter": {
+        "Analyze Relevance": {
+            "main": [
+                [
+                    {
+                        "node": "Filter Relevant",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter Relevant": {
             "main": [
                 [
                     {
