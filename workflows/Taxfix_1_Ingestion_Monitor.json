@@ -158,7 +158,7 @@
                         },
                         {
                             "role": "user",
-                            "content": "Analyze the following SINGLE news item.\nTitle: {{ $json.title }}\nLink: {{ $json.link }}\nSource: {{ $json.source }}\n\nInstructions:\n1. Return ONLY the JSON object for this specific item.\n2. Do NOT generate a list of examples.\n3. Do NOT invent new news items.\n4. If the title is empty or generic, return { \"relevant\": false }."
+                            "content": "Analyze the following SINGLE news item.\nTitle: {{ $json.title }}\nLink: {{ $json.link }}\nSource: {{ $json.source }}\n\nInstructions:\n1. Decide if this is purely about TAXES/FINANCE for young people (Relevant).\n2. Return Valid JSON with this EXACT structure:\n{\n  \"relevant\": boolean,\n  \"topic\": \"Engaging German Title (max 10 words)\",\n  \"confidence\": 0.1 to 1.0 (number),\n  \"platform\": \"TikTok\",\n  \"reasoning\": \"Short reason why it fits Taxfix userbase\"\n}\n3. If Irrelevant, set confidence to 0.1."
                         }
                     ]
                 }
