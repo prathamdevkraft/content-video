@@ -313,9 +313,41 @@
                 }
             }
         }
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "trigger",
+                "options": {}
+            },
+            "name": "Webhook Trigger",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                500
+            ],
+            "webhookId": "b1823485-8023-4556-9023-9081230981",
+            "id": "webhook-trigger"
+        }
     ],
     "connections": {
         "Schedule Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Fetch Tagesschau",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Fetch Presseportal",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Webhook Trigger": {
             "main": [
                 [
                     {
