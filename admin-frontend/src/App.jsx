@@ -7,6 +7,7 @@ import RefreshButton from './components/RefreshButton';
 import NewsFeed from './components/NewsFeed';
 import ScriptEditor from './components/ScriptEditor';
 import VideoPlayer from './components/VideoPlayer';
+import PerformanceDashboard from './components/PerformanceDashboard';
 
 const AppWrapper = styled.div`
   min-height: 100vh;
@@ -317,13 +318,13 @@ function App() {
       <Card>
         <CardHeader>
           <BarChart2 size={32} color="#000000" strokeWidth={3} />
-          <CardTitle>Analytics & Compliance</CardTitle>
+          <CardTitle>Performance & KPIs</CardTitle>
         </CardHeader>
         <Description>
-          View audit logs, compliance scores, and performance metrics (Streamlit).
+          Tracking 30-60/day output, AEO Answer Share, and Compliance Checks.
         </Description>
-        <ActionButton onClick={() => window.open('http://13.200.99.186:8501', '_blank')} style={{ background: '#8b5cf6' }}>
-          OPEN DASHBOARD ↗
+        <ActionButton onClick={() => setView('analytics')} style={{ background: '#8b5cf6' }}>
+          OPEN COMMAND CENTER
         </ActionButton>
       </Card>
     </MainGrid>
@@ -430,6 +431,13 @@ function App() {
         <div style={{ width: '100%', maxWidth: '1000px' }}>
           <div style={{ marginBottom: '20px', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => setView('dashboard')}>← Back to Dashboard</div>
           <VideoPlayer job={selectedJob} onPublish={handlePublishVideo} />
+        </div>
+      )}
+
+      {view === 'analytics' && (
+        <div style={{ width: '100%' }}>
+          <div style={{ marginBottom: '20px', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => setView('home')}>← Back to Home</div>
+          <PerformanceDashboard />
         </div>
       )}
 
