@@ -236,3 +236,18 @@ async def get_analytics():
         return analytics
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/news")
+async def get_news():
+    """
+    Returns ingested news items (PENDING_GENERATION) for the News Feed.
+    """
+    if not supabase:
+         raise HTTPException(status_code=500, detail="DB Missing")
+
+    try:
+        # Fetch items that are new/pending
+        res = supabase.table("content_queue").select("*").eq("status", "PENDING_GENERATION").order("created_at", desc=True).limit(20).execute()
+        return res.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

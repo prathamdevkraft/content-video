@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
 import { Plus, TrendingUp, RefreshCw, Send, Globe } from 'lucide-react';
@@ -107,74 +107,94 @@ const Button = styled.button`
 
 // Mock Current Trends (simulating Google Trends / API)
 const MOCK_TRENDS = [
-    { id: 1, topic: "New Kindergeld Rules 2026", source: "Bundesfinanzministerium", url: "https://bundesfinanzministerium.de", tag: "HOT" },
-    { id: 2, topic: "Home Office Pauschale Increase", source: "Tagesschau", url: "https://tagesschau.de", tag: "TRENDING" },
-    { id: 3, topic: "Crypto Tax Exemption Changes", source: "Handelsblatt", url: "https://handelsblatt.com", tag: "NEW" },
-    { id: 4, topic: "Student Loan Interest Deductions", source: "Spiegel", url: "https://spiegel.de", tag: "GUIDE" },
+  { id: 1, topic: "New Kindergeld Rules 2026", source: "Bundesfinanzministerium", url: "https://bundesfinanzministerium.de", tag: "HOT" },
+  { id: 2, topic: "Home Office Pauschale Increase", source: "Tagesschau", url: "https://tagesschau.de", tag: "TRENDING" },
+  { id: 3, topic: "Crypto Tax Exemption Changes", source: "Handelsblatt", url: "https://handelsblatt.com", tag: "NEW" },
+  { id: 4, topic: "Student Loan Interest Deductions", source: "Spiegel", url: "https://spiegel.de", tag: "GUIDE" },
 ];
 
 const NewsFeed = ({ onGenerate }) => {
-    const [customTopic, setCustomTopic] = useState("");
-    const [generating, setGenerating] = useState(null); // ID or 'custom'
+  const [customTopic, setCustomTopic] = useState("");
+  const [generating, setGenerating] = useState(null); // ID or 'custom'
+  const [trends, setTrends] = useState([]);
 
-    const handleGenerate = async (topic, sourceUrl = "https://taxfix.de", id = 'custom') => {
-        setGenerating(id);
-        // Call parent handler
-        await onGenerate({ topic, source_url: sourceUrl });
-        setGenerating(null);
-        if (id === 'custom') setCustomTopic("");
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        const res = await axios.get('http://13.200.99.186:8020/news');
+        // Map DB columns to UI format
+        const items = res.data.map(item => ({
+          id: item.id,
+          topic: item.topic,
+          source: "Ingestion System",
+          url: item.source_url || "#",
+          tag: item.platform || "NEW"
+        }));
+        setTrends(items);
+      } catch (e) { console.error("Failed to fetch news", e); }
     };
+    fetchNews();
+  }, []);
 
-    return (
-        <Container>
-            <SectionTitle>
-                <Plus size={32} /> Create from Topic
-            </SectionTitle>
+  const handleGenerate = async (topic, sourceUrl = "https://taxfix.de", id = 'custom') => {
+    setGenerating(id);
+    // Call parent handler
+    await onGenerate({ topic, source_url: sourceUrl });
+    setGenerating(null);
+    if (id === 'custom') setCustomTopic("");
+  };
 
-            <TopicInput>
-                <Input
-                    placeholder="e.g. 'Tax changes for freelancers in 2025'..."
-                    value={customTopic}
-                    onChange={(e) => setCustomTopic(e.target.value)}
-                />
-                <Button
-                    onClick={() => handleGenerate(customTopic)}
-                    disabled={!customTopic.trim() || generating === 'custom'}
-                >
-                    {generating === 'custom' ? <RefreshCw className="spin" size={20} /> : <Send size={20} />}
-                    Generate
-                </Button>
-            </TopicInput>
+  return (
+    <Container>
+      <SectionTitle>
+        <Plus size={32} /> Create from Topic
+      </SectionTitle>
 
-            <SectionTitle>
-                <TrendingUp size={32} /> Trending Now
-            </SectionTitle>
+      <TopicInput>
+        <Input
+          placeholder="e.g. 'Tax changes for freelancers in 2025'..."
+          value={customTopic}
+          onChange={(e) => setCustomTopic(e.target.value)}
+        />
+        <Button
+          onClick={() => handleGenerate(customTopic)}
+          disabled={!customTopic.trim() || generating === 'custom'}
+        >
+          {generating === 'custom' ? <RefreshCw className="spin" size={20} /> : <Send size={20} />}
+          Generate
+        </Button>
+      </TopicInput>
 
-            <Grid>
-                {MOCK_TRENDS.map((item) => (
-                    <NewsCard key={item.id} onClick={() => handleGenerate(item.topic, item.url, item.id)}>
-                        <div style={{ marginBottom: '12px' }}>
-                            <Tag>{item.tag}</Tag>
-                        </div>
-                        <h3 style={{ fontSize: '20px', margin: '0 0 12px 0' }}>{item.topic}</h3>
-                        <Source>
-                            <Globe size={14} /> {item.source}
-                        </Source>
-                        <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
-                            <span style={{ fontWeight: 800, fontSize: '14px', textDecoration: 'underline' }}>
-                                {generating === item.id ? 'GENERATING...' : 'CREATE SCRIPT →'}
-                            </span>
-                        </div>
-                    </NewsCard>
-                ))}
-            </Grid>
+      <SectionTitle>
+        <TrendingUp size={32} /> Trending Now
+      </SectionTitle>
 
-            <style>{`
+      <Grid>
+        {trends.length === 0 && <p style={{ gridColumn: '1/-1', textAlign: 'center' }}>No pending news items found. Trigger the pipeline!</p>}
+        {trends.map((item) => (
+          <NewsCard key={item.id} onClick={() => handleGenerate(item.topic, item.url, item.id)}>
+            <div style={{ marginBottom: '12px' }}>
+              <Tag>{item.tag}</Tag>
+            </div>
+            <h3 style={{ fontSize: '20px', margin: '0 0 12px 0' }}>{item.topic}</h3>
+            <Source>
+              <Globe size={14} /> {item.source}
+            </Source>
+            <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
+              <span style={{ fontWeight: 800, fontSize: '14px', textDecoration: 'underline' }}>
+                {generating === item.id ? 'GENERATING...' : 'CREATE SCRIPT →'}
+              </span>
+            </div>
+          </NewsCard>
+        ))}
+      </Grid>
+
+      <style>{`
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
       `}</style>
-        </Container>
-    );
+    </Container>
+  );
 };
 
 export default NewsFeed;
