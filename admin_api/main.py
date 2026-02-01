@@ -26,8 +26,27 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
 
+
+# Request Models
 class TriggerRequest(BaseModel):
     workflow_id: str = "taxfix-production"
+
+class GenerateScriptRequest(BaseModel):
+    topic: str
+    source_url: str
+    platform: str = "TikTok"
+    language: str = "de"
+
+class ApproveScriptRequest(BaseModel):
+    id: int
+    script_content: dict
+    social_caption: str
+    hashtags: list[str]
+
+class PublishVideoRequest(BaseModel):
+    id: int
+    platforms: list[str] = ["TikTok", "Instagram"]
+
 
 @app.get("/health")
 def health_check():
@@ -100,3 +119,75 @@ async def trigger_n8n(request: TriggerRequest):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to call n8n: {str(e)}")
+
+@app.post("/generate-script")
+async def generate_script(req: GenerateScriptRequest):
+    """
+    1. Inserts a new job into content_queue.
+    2. Triggers the Generation Workflow (Webhook).
+    """
+    if not supabase:
+        raise HTTPException(status_code=500, detail="DB Config Missing")
+    
+    try:
+        # Insert into DB
+        data = {
+            "topic": req.topic,
+            "source_url": req.source_url,
+            "platform": req.platform,
+            "language": req.language,
+            "status": "PENDING_GENERATION"
+        }
+        res = supabase.table("content_queue").insert(data).execute()
+        new_job = res.data[0]
+        
+        # Trigger n8n Webhook
+        # We use a dedicated webhook for 'Generate'
+        N8N_WEBHOOK = "http://taxfix-n8n-factory:5678/webhook/generate-script"
+        requests.post(N8N_WEBHOOK, json={"id": new_job['id'], "topic": req.topic, "language": req.language})
+        
+        return {"status": "success", "job": new_job}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/approve-script")
+async def approve_script(req: ApproveScriptRequest):
+    """
+    1. Updates the script content in DB.
+    2. Sets status to 'APPROVED' (or 'RENDERING').
+    3. Triggers the Rendering Workflow.
+    """
+    try:
+        supabase.table("content_queue").update({
+            "script_content": req.script_content,
+            "social_caption": req.social_caption,
+            "hashtags": req.hashtags,
+            "status": "PENDING_RENDER" # New status for video gen
+        }).eq("id", req.id).execute()
+        
+        # Trigger n8n Webhook for Video Generation
+        N8N_WEBHOOK = "http://taxfix-n8n-factory:5678/webhook/render-video"
+        requests.post(N8N_WEBHOOK, json={"id": req.id})
+        
+        return {"status": "success", "message": "Script approved, rendering started."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/publish-video")
+async def publish_video(req: PublishVideoRequest):
+    """
+    1. Updates target platforms.
+    2. Triggers Publisher Workflow.
+    """
+    try:
+        supabase.table("content_queue").update({
+            "target_platforms": req.platforms
+        }).eq("id", req.id).execute()
+        
+        # Trigger n8n Webhook
+        N8N_WEBHOOK = "http://taxfix-n8n-factory:5678/webhook/publish-video"
+        requests.post(N8N_WEBHOOK, json={"id": req.id})
+        
+        return {"status": "success", "message": "Publishing trigger sent."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
