@@ -121,6 +121,7 @@ async def trigger_n8n(request: TriggerRequest):
         # Fire and forget (or wait for ack)
         # We send an empty JSON payload just to trigger it
         response = requests.post(N8N_WEBHOOK_URL, json={"trigger": "admin-ui"})
+        print(f"DEBUG N8N INGESTION RESPONSE: Code={response.status_code}, Body={response.text}")
         
         if response.status_code >= 400:
              return {"status": "error", "detail": f"N8N responded with {response.status_code}: {response.text}"}
