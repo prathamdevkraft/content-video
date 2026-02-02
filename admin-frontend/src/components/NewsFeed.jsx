@@ -19,7 +19,7 @@ const SectionTitle = styled.h2`
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 24px;
   margin-bottom: 48px;
 `;
@@ -66,6 +66,11 @@ const TopicInput = styled.div`
   padding: 24px;
   border: 4px solid black;
   box-shadow: 8px 8px 0 black;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    padding: 16px;
+  }
 `;
 
 const Input = styled.input`

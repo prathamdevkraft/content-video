@@ -17,6 +17,10 @@ const AppWrapper = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
 `;
 
 const Header = styled.header`
@@ -30,6 +34,14 @@ const Header = styled.header`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+    margin-bottom: 24px;
+    text-align: center;
+  }
 `;
 
 const Title = styled.h1`
@@ -52,7 +64,7 @@ const StatusBadge = styled.div`
 
 const MainGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 32px;
   width: 100%;
   max-width: 1200px;
@@ -64,6 +76,10 @@ const Card = styled.div`
   box-shadow: 12px 12px 0 #000000;
   padding: 32px;
   transition: transform 0.2s;
+  
+  @media (max-width: 768px) {
+    padding: 20px;
+  }
   height: 100%;
 
   &:hover {

@@ -7,7 +7,14 @@ const Container = styled.div`
   grid-template-columns: 1fr 1fr;
   gap: 32px;
   height: calc(100vh - 200px);
+  height: calc(100vh - 200px);
   min-height: 600px;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: auto;
+  }
 `;
 
 const Column = styled.div`
