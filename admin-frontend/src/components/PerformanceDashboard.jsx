@@ -187,8 +187,8 @@ const PerformanceDashboard = () => {
                 </ChartCard>
             </ChartGrid>
 
-            <div style={{ display: 'flex', gap: '32px', marginBottom: '32px' }}>
-                <ChartCard style={{ flex: 1 }}>
+            <BottomGrid>
+                <ChartCard>
                     <ChartTitle>Content Governance & Status</ChartTitle>
                     <ResponsiveContainer width="100%" height="85%">
                         <PieChart margin={{ top: 20, right: 30, left: 30, bottom: 20 }}>
@@ -197,7 +197,7 @@ const PerformanceDashboard = () => {
                                 cx="50%"
                                 cy="50%"
                                 labelLine={true}
-                                outerRadius={100}
+                                outerRadius="70%"
                                 fill="#8884d8"
                                 dataKey="value"
                                 label={({ name, percent }) => percent > 0 ? `${name} ${(percent * 100).toFixed(0)}%` : null}
@@ -211,7 +211,7 @@ const PerformanceDashboard = () => {
                     </ResponsiveContainer>
                 </ChartCard>
 
-                <div style={{ flex: 1, overflowX: 'auto' }}>
+                <div style={{ overflowX: 'auto' }}>
                     <ChartCard style={{ overflowY: 'auto' }}>
                         <ChartTitle>Recent Audit Trail (Governance)</ChartTitle>
                         <div style={{ overflowX: 'auto' }}>
@@ -238,7 +238,7 @@ const PerformanceDashboard = () => {
                         </div>
                     </ChartCard>
                 </div>
-            </div>
+            </BottomGrid>
 
         </Container>
     );
