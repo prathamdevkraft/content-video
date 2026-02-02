@@ -213,10 +213,56 @@
             "type": "n8n-nodes-base.if",
             "typeVersion": 1,
             "position": [
-                1150,
+                1250,
                 300
             ],
             "id": "filter-quality"
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "model": "gpt-4o",
+                "jsonOutput": true,
+                "messages": {
+                    "values": [
+                        {
+                            "role": "system",
+                            "content": "You are a professional Content Creator for Taxfix. Generate two formats for this topic:\n1. A Viral Video Script (TikTok/Reels) - German.\n2. A Professional Article (LinkedIn/Blog) - German.\n\nSOURCE ALERTS:\nCompliance: No financial advice. Cite sources.\nTarget: Young Professionals (25-35).\n\nReturn STRICT JSON:\n{\n  \"video_script\": {\n    \"hook\": \"Attention grabber (0-5s)\",\n    \"body\": \"Main value (30s)\",\n    \"cta\": \"Call to action\"\n  },\n  \"blog_post\": {\n    \"title\": \"Professional Headline\",\n    \"body\": \"Full markdown body text\",\n    \"tags\": [\"#Taxfix\", \"#Steuern\"]\n  }\n}"
+                        },
+                        {
+                            "role": "user",
+                            "content": "Topic: {{ $json.topic }}\nReasoning: {{ $json.reasoning }}\nTarget Platform: {{ $json.platform }}"
+                        }
+                    ]
+                }
+            },
+            "name": "Generate Content",
+            "type": "n8n-nodes-base.openAi",
+            "typeVersion": 1,
+            "position": [
+                1450,
+                300
+            ],
+            "id": "generate-content",
+            "credentials": {
+                "openAiApi": {
+                    "id": "openai_account",
+                    "name": "OpenAI account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const content = JSON.parse($json.message.content);\nreturn {\n  ...$json,\n  script_structure: content.video_script,\n  blog_content: content.blog_post,\n  generated_types: ['video', 'blog']\n};"
+            },
+            "name": "Parse Generation",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 1,
+            "position": [
+                1650,
+                300
+            ],
+            "id": "parse-generation"
         },
         {
             "parameters": {
@@ -234,7 +280,7 @@
                         },
                         {
                             "fieldId": "status",
-                            "fieldValue": "PENDING_GENERATION"
+                            "fieldValue": "PENDING_REVIEW"
                         },
                         {
                             "fieldId": "platform",
@@ -243,6 +289,18 @@
                         {
                             "fieldId": "compliance_score",
                             "fieldValue": "={{ $json.confidence }}"
+                        },
+                        {
+                            "fieldId": "script_structure",
+                            "fieldValue": "={{ $json.script_structure }}"
+                        },
+                        {
+                            "fieldId": "blog_content",
+                            "fieldValue": "={{ $json.blog_content }}"
+                        },
+                        {
+                            "fieldId": "generated_content_types",
+                            "fieldValue": "={{ $json.generated_types }}"
                         }
                     ]
                 }
@@ -251,7 +309,7 @@
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                1350,
+                1850,
                 300
             ],
             "id": "add-to-queue",
@@ -412,6 +470,28 @@
             ]
         },
         "Filter High Quality": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Content",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Content": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Generation",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Generation": {
             "main": [
                 [
                     {

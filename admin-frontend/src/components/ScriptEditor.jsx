@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Check, AlertTriangle, PlayCircle, Save } from 'lucide-react';
+import { Check, AlertTriangle, PlayCircle, Save, FileText, Video } from 'lucide-react';
 
 const Container = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 32px;
-  height: calc(100vh - 200px);
   height: calc(100vh - 200px);
   min-height: 600px;
   
@@ -39,6 +38,9 @@ const Title = styled.h3`
   margin: 0 0 16px 0;
   border-bottom: 2px solid #eee;
   padding-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 `;
 
 const Label = styled.label`
@@ -68,6 +70,30 @@ const TextArea = styled.textarea`
   }
 `;
 
+const ToggleContainer = styled.div`
+  display: flex;
+  background: #eee;
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+`;
+
+const ToggleButton = styled.button`
+  flex: 1;
+  padding: 8px;
+  border: none;
+  background: ${props => props.active ? 'white' : 'transparent'};
+  box-shadow: ${props => props.active ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'};
+  font-weight: ${props => props.active ? '800' : '500'};
+  color: ${props => props.active ? 'black' : '#666'};
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+`;
+
 const ActionButton = styled.button`
   background: #16a34a; /* Green-600 */
   color: white;
@@ -88,9 +114,9 @@ const ActionButton = styled.button`
     box-shadow: 8px 8px 0 black;
   }
   
-  &:disabled {
-    background: #ccc;
-    cursor: not-allowed;
+  @media (max-width: 768px) {
+    width: 100%;
+    margin-top: 24px;
   }
 `;
 
@@ -102,17 +128,29 @@ const ComplianceBox = styled.div`
 `;
 
 const ScriptEditor = ({ job, onApprove }) => {
+    const [mode, setMode] = useState('video'); // 'video' | 'blog'
+
+    // Video State
     const [script, setScript] = useState({
         hook: "",
         body: "",
         cta: ""
     });
+
+    // Blog State
+    const [blog, setBlog] = useState({
+        title: "",
+        body: "",
+        tags: ""
+    });
+
     const [metadata, setMetadata] = useState({
         caption: "",
         hashtags: ""
     });
 
     useEffect(() => {
+        // Init Video
         if (job?.script_content) {
             setScript({
                 hook: job.script_content.hook || "",
@@ -120,24 +158,42 @@ const ScriptEditor = ({ job, onApprove }) => {
                 cta: job.script_content.cta || ""
             });
         }
+        // Init Blog (Updated to handle potential missing field)
+        const blogContent = job?.blog_content || {};
+        setBlog({
+            title: blogContent.title || "",
+            body: blogContent.body || "",
+            tags: Array.isArray(blogContent.tags) ? blogContent.tags.join(" ") : (blogContent.tags || "")
+        });
+
+        // Init Metadata
         setMetadata({
-            caption: job?.social_caption || "",
-            hashtags: Array.isArray(job?.hashtags) ? job.hashtags.join(" ") : (job?.hashtags || "")
+            caption: job?.social_metrics?.caption || job?.social_caption || "",
+            hashtags: Array.isArray(job?.social_metrics?.hashtags)
+                ? job.social_metrics.hashtags.join(" ")
+                : (job?.hashtags || "")
         });
     }, [job]);
 
     const handleSave = () => {
+        // Prepare payload with BOTH formats
         onApprove({
             id: job.id,
             script_content: script,
-            social_caption: metadata.caption,
-            hashtags: metadata.hashtags.split(" ").filter(t => t.startsWith("#"))
+            blog_content: {
+                ...blog,
+                tags: blog.tags.split(" ").filter(t => t.startsWith("#"))
+            },
+            social_metrics: {
+                caption: metadata.caption,
+                hashtags: metadata.hashtags.split(" ").filter(t => t.startsWith("#"))
+            }
         });
     };
 
     return (
         <Container>
-            {/* LEFT COLUMN: CONTEXT & METADATA */}
+            {/* LEFT COLUMN: CONTEXT */}
             <Column>
                 <Card>
                     <Title>Source Context</Title>
@@ -158,11 +214,11 @@ const ScriptEditor = ({ job, onApprove }) => {
                         </div>
                         <p style={{ fontSize: '14px', margin: 0 }}>
                             Ensure NO financial advice is given. Cite EStG paragraphs where possible.
-                            Verify facts against source URL.
                         </p>
                     </ComplianceBox>
 
-                    <Label>Social Caption</Label>
+                    {/* SHARED METADATA (Applies to both) */}
+                    <Label>Social Caption / Short Text</Label>
                     <TextArea
                         value={metadata.caption}
                         onChange={(e) => setMetadata({ ...metadata, caption: e.target.value })}
@@ -178,33 +234,64 @@ const ScriptEditor = ({ job, onApprove }) => {
                 </Card>
             </Column>
 
-            {/* RIGHT COLUMN: SCRIPT EDITING */}
+            {/* RIGHT COLUMN: EDITOR */}
             <Column>
                 <Card>
-                    <Title>Script Editor (AI Draft)</Title>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <Title style={{ border: 'none', margin: 0, padding: 0 }}>Content Editor</Title>
+                    </div>
 
-                    <Label>1. The Hook (0-5s) - Grab Attention</Label>
-                    <TextArea
-                        value={script.hook}
-                        onChange={(e) => setScript({ ...script, hook: e.target.value })}
-                    />
+                    <ToggleContainer>
+                        <ToggleButton active={mode === 'video'} onClick={() => setMode('video')}>
+                            <Video size={18} /> Video Script
+                        </ToggleButton>
+                        <ToggleButton active={mode === 'blog'} onClick={() => setMode('blog')}>
+                            <FileText size={18} /> Blog Post
+                        </ToggleButton>
+                    </ToggleContainer>
 
-                    <Label>2. The Body (5-45s) - Value & Info</Label>
-                    <TextArea
-                        value={script.body}
-                        onChange={(e) => setScript({ ...script, body: e.target.value })}
-                        style={{ minHeight: '200px' }}
-                    />
+                    {mode === 'video' ? (
+                        <>
+                            <Label>1. The Hook (0-5s)</Label>
+                            <TextArea
+                                value={script.hook}
+                                onChange={(e) => setScript({ ...script, hook: e.target.value })}
+                            />
 
-                    <Label>3. Call to Action (45-60s) - Next Step</Label>
-                    <TextArea
-                        value={script.cta}
-                        onChange={(e) => setScript({ ...script, cta: e.target.value })}
-                        style={{ minHeight: '60px' }}
-                    />
+                            <Label>2. The Body (Script)</Label>
+                            <TextArea
+                                value={script.body}
+                                onChange={(e) => setScript({ ...script, body: e.target.value })}
+                                style={{ minHeight: '200px' }}
+                            />
+
+                            <Label>3. Call to Action</Label>
+                            <TextArea
+                                value={script.cta}
+                                onChange={(e) => setScript({ ...script, cta: e.target.value })}
+                                style={{ minHeight: '60px' }}
+                            />
+                        </>
+                    ) : (
+                        <>
+                            <Label>Headline</Label>
+                            <TextArea
+                                value={blog.title}
+                                onChange={(e) => setBlog({ ...blog, title: e.target.value })}
+                                style={{ minHeight: '60px', fontWeight: 'bold' }}
+                            />
+
+                            <Label>Article Body (Markdown)</Label>
+                            <TextArea
+                                value={blog.body}
+                                onChange={(e) => setBlog({ ...blog, body: e.target.value })}
+                                style={{ minHeight: '400px' }}
+                            />
+                        </>
+                    )}
 
                     <ActionButton onClick={handleSave}>
-                        <Check size={24} strokeWidth={3} /> APPROVE & RENDER VIDEO
+                        <Save size={24} strokeWidth={3} /> SAVE & PUBLISH
                     </ActionButton>
                 </Card>
             </Column>
