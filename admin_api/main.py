@@ -45,9 +45,11 @@ class GenerateScriptRequest(BaseModel):
 
 class ApproveScriptRequest(BaseModel):
     id: int
-    script_content: dict
-    social_caption: str
-    hashtags: list[str]
+    script_structure: dict
+    script_structure_en: dict = {}
+    blog_content: dict
+    blog_content_en: dict = {}
+    social_metrics: dict
 
 class PublishVideoRequest(BaseModel):
     id: int
@@ -183,9 +185,11 @@ async def approve_script(req: ApproveScriptRequest):
     """
     try:
         supabase.table("content_queue").update({
-            "script_content": req.script_content,
-            "social_caption": req.social_caption,
-            "hashtags": req.hashtags,
+            "script_structure": req.script_structure,
+            "script_structure_en": req.script_structure_en,
+            "blog_content": req.blog_content,
+            "blog_content_en": req.blog_content_en,
+            "social_metrics": req.social_metrics,
             "status": "PENDING_RENDER" # New status for video gen
         }).eq("id", req.id).execute()
         
