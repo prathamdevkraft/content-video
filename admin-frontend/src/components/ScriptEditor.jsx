@@ -129,19 +129,18 @@ const ComplianceBox = styled.div`
 
 const ScriptEditor = ({ job, onApprove }) => {
     const [mode, setMode] = useState('video'); // 'video' | 'blog'
+    const [language, setLanguage] = useState('de'); // 'de' | 'en'
 
     // Video State
     const [script, setScript] = useState({
-        hook: "",
-        body: "",
-        cta: ""
+        de: { hook: "", body: "", cta: "" },
+        en: { hook: "", body: "", cta: "" }
     });
 
     // Blog State
     const [blog, setBlog] = useState({
-        title: "",
-        body: "",
-        tags: ""
+        de: { title: "", body: "", tags: "" },
+        en: { title: "", body: "", tags: "" }
     });
 
     const [metadata, setMetadata] = useState({
@@ -151,46 +150,101 @@ const ScriptEditor = ({ job, onApprove }) => {
 
     useEffect(() => {
         // Init Video
-        // Check "script_structure" (DB Column) OR "script_content" (Frontend State)
-        const scriptData = job?.script_structure || job?.script_content;
-        if (scriptData) {
-            setScript({
+        const scriptData = job?.script_structure || job?.script_content || {};
+        const scriptDataEn = job?.script_structure_en || {};
+
+        setScript({
+            de: {
                 hook: scriptData.hook || "",
                 body: scriptData.body || "",
                 cta: scriptData.cta || ""
-            });
-        }
-        // Init Blog (Updated to handle potential missing field)
+            },
+            en: {
+                hook: scriptDataEn.hook || "",
+                body: scriptDataEn.body || "",
+                cta: scriptDataEn.cta || ""
+            }
+        });
+
+        // Init Blog
         const blogContent = job?.blog_content || {};
+        const blogContentEn = job?.blog_content_en || {};
+
         setBlog({
-            title: blogContent.title || "",
-            body: blogContent.body || "",
-            tags: Array.isArray(blogContent.tags) ? blogContent.tags.join(" ") : (blogContent.tags || "")
+            de: {
+                title: blogContent.title || "",
+                body: blogContent.body || "",
+                tags: Array.isArray(blogContent.tags) ? blogContent.tags.join(" ") : (blogContent.tags || "")
+            },
+            en: {
+                title: blogContentEn.title || "",
+                body: blogContentEn.body || "",
+                tags: Array.isArray(blogContentEn.tags) ? blogContentEn.tags.join(" ") : (blogContentEn.tags || "")
+            }
         });
 
         // Init Metadata
+        const social = job?.social_metrics || {};
         setMetadata({
-            caption: job?.social_metrics?.caption || job?.social_caption || "",
-            hashtags: Array.isArray(job?.social_metrics?.hashtags)
-                ? job.social_metrics.hashtags.join(" ")
-                : (job?.hashtags || "")
+            caption: social.caption || "",
+            hashtags: Array.isArray(social.hashtags) ? social.hashtags.join(" ") : (social.hashtags || "")
         });
     }, [job]);
 
+    const handleAction = async (action) => {
+        // Call the new Taxfix_3 workflow
+        // In production, use axios or a service wrapper
+        try {
+            await fetch('https://n8n.taxfix.devkraft.in/webhook/process-content', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: action,
+                    payload: {
+                        id: job.id,
+                        language: language,
+                        script_structure: script[language],
+                        blog_content: blog[language],
+                        topic: job.topic,
+                        platform: job.platform
+                    }
+                })
+            });
+            alert(`Action '${action}' triggered! Reload page in a few seconds.`);
+        } catch (e) {
+            alert('Error triggering action: ' + e.message);
+        }
+    };
+
     const handleSave = () => {
-        // Prepare payload with BOTH formats
         onApprove({
             id: job.id,
-            script_content: script,
-            blog_content: {
-                ...blog,
-                tags: blog.tags.split(" ").filter(t => t.startsWith("#"))
-            },
+            script_structure: script.de,
+            script_structure_en: script.en,
+            blog_content: { ...blog.de, tags: blog.de.tags.split(" ").filter(t => t.startsWith("#")) },
+            blog_content_en: { ...blog.en, tags: blog.en.tags.split(" ").filter(t => t.startsWith("#")) },
             social_metrics: {
                 caption: metadata.caption,
                 hashtags: metadata.hashtags.split(" ").filter(t => t.startsWith("#"))
             }
         });
+    };
+
+    const currentScript = script[language];
+    const currentBlog = blog[language];
+
+    const updateScript = (field, val) => {
+        setScript(prev => ({
+            ...prev,
+            [language]: { ...prev[language], [field]: val }
+        }));
+    };
+
+    const updateBlog = (field, val) => {
+        setBlog(prev => ({
+            ...prev,
+            [language]: { ...prev[language], [field]: val }
+        }));
     };
 
     return (
@@ -203,24 +257,23 @@ const ScriptEditor = ({ job, onApprove }) => {
                         <Label>Topic</Label>
                         <div style={{ fontWeight: 'bold', fontSize: '18px' }}>{job?.topic}</div>
                     </div>
-                    <div style={{ marginBottom: '20px' }}>
-                        <Label>Source URL</Label>
-                        <a href={job?.source_url} target="_blank" style={{ color: 'blue' }}>
-                            {job?.source_url}
-                        </a>
-                    </div>
 
                     <ComplianceBox>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#dc2626', fontWeight: 'bold', marginBottom: '8px' }}>
                             <AlertTriangle size={20} /> Compliance Check
                         </div>
                         <p style={{ fontSize: '14px', margin: 0 }}>
-                            Ensure NO financial advice is given. Cite EStG paragraphs where possible.
+                            Ensure NO financial advice is given.
                         </p>
                     </ComplianceBox>
 
-                    {/* SHARED METADATA (Applies to both) */}
-                    <Label>Social Caption / Short Text</Label>
+                    {/* METADATA SECTION with Generator */}
+                    <Title>Social Metadata</Title>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                        <button onClick={() => handleAction('generate_metadata')} style={{ cursor: 'pointer', background: '#ddd', border: '1px solid black', padding: '4px 8px', fontSize: '12px', fontWeight: 'bold' }}>✨ Generate AI Metrics</button>
+                    </div>
+
+                    <Label>Social Caption</Label>
                     <TextArea
                         value={metadata.caption}
                         onChange={(e) => setMetadata({ ...metadata, caption: e.target.value })}
@@ -241,6 +294,15 @@ const ScriptEditor = ({ job, onApprove }) => {
                 <Card>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                         <Title style={{ border: 'none', margin: 0, padding: 0 }}>Content Editor</Title>
+                        {/* LANGUAGE TOGGLE */}
+                        <ToggleContainer style={{ marginBottom: 0, width: 'auto' }}>
+                            <ToggleButton active={language === 'de'} onClick={() => setLanguage('de')}>DE</ToggleButton>
+                            <ToggleButton active={language === 'en'} onClick={() => setLanguage('en')}>EN</ToggleButton>
+                        </ToggleContainer>
+                    </div>
+
+                    <div style={{ marginBottom: '16px', display: 'flex', gap: '12px' }}>
+                        <button onClick={() => handleAction('translate')} style={{ padding: '8px', cursor: 'pointer' }}>🌍 Auto-Translate to {language === 'de' ? 'English' : 'German'}</button>
                     </div>
 
                     <ToggleContainer>
@@ -256,37 +318,40 @@ const ScriptEditor = ({ job, onApprove }) => {
                         <>
                             <Label>1. The Hook (0-5s)</Label>
                             <TextArea
-                                value={script.hook}
-                                onChange={(e) => setScript({ ...script, hook: e.target.value })}
+                                value={currentScript.hook}
+                                onChange={(e) => updateScript('hook', e.target.value)}
                             />
 
                             <Label>2. The Body (Script)</Label>
                             <TextArea
-                                value={script.body}
-                                onChange={(e) => setScript({ ...script, body: e.target.value })}
+                                value={currentScript.body}
+                                onChange={(e) => updateScript('body', e.target.value)}
                                 style={{ minHeight: '200px' }}
                             />
 
                             <Label>3. Call to Action</Label>
                             <TextArea
-                                value={script.cta}
-                                onChange={(e) => setScript({ ...script, cta: e.target.value })}
+                                value={currentScript.cta}
+                                onChange={(e) => updateScript('cta', e.target.value)}
                                 style={{ minHeight: '60px' }}
                             />
                         </>
                     ) : (
                         <>
-                            <Label>Headline</Label>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Label>Headline</Label>
+                                <button onClick={() => handleAction('regenerate_blog')} style={{ fontSize: '10px', marginBottom: '4px', cursor: 'pointer' }}>🔄 Regenerate from Script</button>
+                            </div>
                             <TextArea
-                                value={blog.title}
-                                onChange={(e) => setBlog({ ...blog, title: e.target.value })}
+                                value={currentBlog.title}
+                                onChange={(e) => updateBlog('title', e.target.value)}
                                 style={{ minHeight: '60px', fontWeight: 'bold' }}
                             />
 
                             <Label>Article Body (Markdown)</Label>
                             <TextArea
-                                value={blog.body}
-                                onChange={(e) => setBlog({ ...blog, body: e.target.value })}
+                                value={currentBlog.body}
+                                onChange={(e) => updateBlog('body', e.target.value)}
                                 style={{ minHeight: '400px' }}
                             />
                         </>

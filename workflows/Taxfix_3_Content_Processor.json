@@ -1,0 +1,320 @@
+{
+    "name": "Taxfix_3_Content_Processor",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "process-content",
+                "options": {}
+            },
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ],
+            "id": "webhook-trigger"
+        },
+        {
+            "parameters": {
+                "dataType": "string",
+                "value1": "={{ $json.body.action }}",
+                "rules": {
+                    "rules": [
+                        {
+                            "value2": "translate",
+                            "output": 0
+                        },
+                        {
+                            "value2": "regenerate_blog",
+                            "output": 1
+                        },
+                        {
+                            "value2": "generate_metadata",
+                            "output": 2
+                        }
+                    ]
+                }
+            },
+            "name": "Switch Action",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ],
+            "id": "switch-action"
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "model": "gpt-4o",
+                "jsonOutput": true,
+                "messages": {
+                    "values": [
+                        {
+                            "role": "system",
+                            "content": "You are a professional Translator. Translate the given JSON content from German to English. Keep the exact JSON structure. Adapt cultural references for an International audience in Germany (Expat focus)."
+                        },
+                        {
+                            "role": "user",
+                            "content": "Translate this payload:\nScript: {{ JSON.stringify($json.body.payload.script_structure) }}\nBlog: {{ JSON.stringify($json.body.payload.blog_content) }}\n\nReturn JSON: { \"script_structure_en\": {...}, \"blog_content_en\": {...} }"
+                        }
+                    ]
+                }
+            },
+            "name": "AI Translate",
+            "type": "n8n-nodes-base.openAi",
+            "typeVersion": 1,
+            "position": [
+                700,
+                100
+            ],
+            "id": "ai-translate",
+            "credentials": {
+                "openAiApi": {
+                    "id": "openai_account",
+                    "name": "OpenAI account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "tableId": "content_queue",
+                "updateKey": "id",
+                "columnsUi": {
+                    "columnValues": [
+                        {
+                            "fieldId": "id",
+                            "fieldValue": "={{ $json.body.payload.id }}"
+                        },
+                        {
+                            "fieldId": "script_structure_en",
+                            "fieldValue": "={{ JSON.parse($json.message.content).script_structure_en }}"
+                        },
+                        {
+                            "fieldId": "blog_content_en",
+                            "fieldValue": "={{ JSON.parse($json.message.content).blog_content_en }}"
+                        }
+                    ]
+                }
+            },
+            "name": "Update Translation",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                900,
+                100
+            ],
+            "id": "update-translation",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "supabase_api_creds",
+                    "name": "Supabase API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "model": "gpt-4o",
+                "jsonOutput": true,
+                "messages": {
+                    "values": [
+                        {
+                            "role": "system",
+                            "content": "You are a Content Strategist. Create a Professional Blog Post based ONLY on the provided Video Script logic. Expand strictly on the points made in the script. Use Markdown."
+                        },
+                        {
+                            "role": "user",
+                            "content": "Language: {{ $json.body.payload.language }}\nScript Structure: {{ JSON.stringify($json.body.payload.script_structure) }}\n\nReturn JSON: { \"title\": \"...\", \"body\": \"...\", \"tags\": [...] }"
+                        }
+                    ]
+                }
+            },
+            "name": "AI Regenerate Blog",
+            "type": "n8n-nodes-base.openAi",
+            "typeVersion": 1,
+            "position": [
+                700,
+                300
+            ],
+            "id": "ai-regenerate-blog",
+            "credentials": {
+                "openAiApi": {
+                    "id": "openai_account",
+                    "name": "OpenAI account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "tableId": "content_queue",
+                "updateKey": "id",
+                "columnsUi": {
+                    "columnValues": [
+                        {
+                            "fieldId": "id",
+                            "fieldValue": "={{ $json.body.payload.id }}"
+                        },
+                        {
+                            "fieldId": "={{ $json.body.payload.language == 'en' ? 'blog_content_en' : 'blog_content' }}",
+                            "fieldValue": "={{ JSON.parse($json.message.content) }}"
+                        }
+                    ]
+                }
+            },
+            "name": "Update Blog",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                900,
+                300
+            ],
+            "id": "update-blog",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "supabase_api_creds",
+                    "name": "Supabase API"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "model": "gpt-4o",
+                "jsonOutput": true,
+                "messages": {
+                    "values": [
+                        {
+                            "role": "system",
+                            "content": "You are a Social Media Manager. Generate a Viral Caption and Hashtags for this content. \nReturn JSON: { \"caption\": \"...\", \"hashtags\": [\"#tag1\", \"#tag2\"] }"
+                        },
+                        {
+                            "role": "user",
+                            "content": "Content Topic: {{ $json.body.payload.topic }}\nPlatform: {{ $json.body.payload.platform }}\n\nReturn optimized social metadata."
+                        }
+                    ]
+                }
+            },
+            "name": "AI Metadata",
+            "type": "n8n-nodes-base.openAi",
+            "typeVersion": 1,
+            "position": [
+                700,
+                500
+            ],
+            "id": "ai-metadata",
+            "credentials": {
+                "openAiApi": {
+                    "id": "openai_account",
+                    "name": "OpenAI account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "tableId": "content_queue",
+                "updateKey": "id",
+                "columnsUi": {
+                    "columnValues": [
+                        {
+                            "fieldId": "id",
+                            "fieldValue": "={{ $json.body.payload.id }}"
+                        },
+                        {
+                            "fieldId": "social_metrics",
+                            "fieldValue": "={{ JSON.parse($json.message.content) }}"
+                        }
+                    ]
+                }
+            },
+            "name": "Update Metadata",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                900,
+                500
+            ],
+            "id": "update-metadata",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "supabase_api_creds",
+                    "name": "Supabase API"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Switch Action",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Switch Action": {
+            "main": [
+                [
+                    {
+                        "node": "AI Translate",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "AI Regenerate Blog",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "AI Metadata",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Translate": {
+            "main": [
+                [
+                    {
+                        "node": "Update Translation",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Regenerate Blog": {
+            "main": [
+                [
+                    {
+                        "node": "Update Blog",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Metadata": {
+            "main": [
+                [
+                    {
+                        "node": "Update Metadata",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
