@@ -44,7 +44,7 @@ class GenerateScriptRequest(BaseModel):
     language: str = "de"
 
 class ApproveScriptRequest(BaseModel):
-    id: int
+    id: str # UUID
     script_structure: dict
     script_structure_en: dict = {}
     blog_content: dict
@@ -52,7 +52,7 @@ class ApproveScriptRequest(BaseModel):
     social_metrics: dict
 
 class PublishVideoRequest(BaseModel):
-    id: int
+    id: str # UUID
     platforms: list[str] = ["TikTok", "Instagram"]
 
 class ContentProcessorRequest(BaseModel):
@@ -289,5 +289,22 @@ async def get_news():
         # Fetch items that are new/pending
         res = supabase.table("content_queue").select("*").eq("status", "PENDING_GENERATION").order("created_at", desc=True).limit(20).execute()
         return res.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/jobs/{job_id}")
+async def get_job(job_id: str):
+    """
+    Fetches a single job by ID.
+    Used for refreshing the Editor state.
+    """
+    if not supabase:
+         raise HTTPException(status_code=500, detail="DB Missing")
+
+    try:
+        res = supabase.table("content_queue").select("*").eq("id", job_id).execute()
+        if not res.data or len(res.data) == 0:
+            raise HTTPException(status_code=404, detail="Job not found")
+        return res.data[0]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
