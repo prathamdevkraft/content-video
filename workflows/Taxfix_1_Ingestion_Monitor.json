@@ -70,7 +70,7 @@
         },
         {
             "parameters": {
-                "jsCode": "// Robust RSS Parser (Regex)\nconst xml = $json.data || '';\nconst items = [];\n// Extract items\nconst itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\nlet match;\nwhile ((match = itemRegex.exec(xml)) !== null) {\n  const content = match[1];\n  const title = (content.match(/<title>([\\s\\S]*?)<\\/title>/) || [])[1] || '';\n  const link = (content.match(/<link>([\\s\\S]*?)<\\/link>/) || [])[1] || '';\n  // Handle CDATA or plain text\n  const cleanTitle = title.replace('<![CDATA[', '').replace(']]>', '').trim();\n  const cleanLink = link.replace('<![CDATA[', '').replace(']]>', '').trim();\n  \n  if (cleanTitle && cleanLink) {\n    items.push({\n      json: {\n        title: cleanTitle,\n        link: cleanLink,\n        source: 'Tagesschau'\n      }\n    });\n  }\n}\nreturn items;"
+                "jsCode": "// Robust RSS Parser (Regex)\nconst xml = $json.data || '';\nconst items = [];\nconst itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\nlet match;\nwhile ((match = itemRegex.exec(xml)) !== null) {\n  const content = match[1];\n  const title = (content.match(/<title>([\\s\\S]*?)<\\/title>/) || [])[1] || '';\n  const link = (content.match(/<link>([\\s\\S]*?)<\\/link>/) || [])[1] || '';\n  \n  const cleanTitle = title.replace('<![CDATA[', '').replace(']]>', '').trim();\n  const cleanLink = link.replace('<![CDATA[', '').replace(']]>', '').trim();\n  \n  if (cleanTitle && cleanLink) {\n    items.push({\n      json: {\n        title: cleanTitle,\n        link: cleanLink,\n        source: 'Tagesschau'\n      }\n    });\n  }\n}\nreturn items;"
             },
             "name": "Parse Tagesschau",
             "type": "n8n-nodes-base.code",
@@ -180,7 +180,7 @@
         },
         {
             "parameters": {
-                "jsCode": "// Parse OpenAI Response & Flatten (Handle Array)\nreturn $input.all().map(item => {\n  const content = item.json.message.content;\n  let parsed = {};\n  try {\n    parsed = JSON.parse(content);\n  } catch(e) {\n    parsed = { relevant: false, reason: \"JSON Parse Fail\" };\n  }\n  return {\n    json: {\n      ...item.json,\n      ...parsed\n    }\n  };\n});"
+                "jsCode": "// Parse OpenAI Response & Flatten (Handle Array)\n// Use $items('Limit Batch Size') to fetch original RSS data to prevent context loss\nconst originalItems = $items('Limit Batch Size');\nconst aiItems = $input.all();\n\nreturn aiItems.map((item, index) => {\n  const content = item.json.message.content;\n  let parsed = {};\n  try {\n    parsed = JSON.parse(content);\n  } catch(e) {\n    parsed = { relevant: false, reason: \"JSON Parse Fail\" };\n  }\n  \n  // Match with original item by index order (preserved by n8n)\n  const original = originalItems[index] ? originalItems[index].json : {};\n\n  return {\n    json: {\n      ...original, // source, title, link\n      ...parsed    // relevant, topic, confidence, platform\n    }\n  };\n});"
             },
             "name": "Parse AI Response",
             "type": "n8n-nodes-base.code",
@@ -253,7 +253,7 @@
         },
         {
             "parameters": {
-                "jsCode": "const content = JSON.parse($json.message.content);\nreturn {\n  ...$json,\n  script_structure: content.video_script,\n  blog_content: content.blog_post,\n  generated_types: ['video', 'blog']\n};"
+                "jsCode": "// Parse Content Generation & Preserve Key Fields\nconst originalItems = $items('Filter High Quality');\nconst aiItems = $input.all();\n\nreturn aiItems.map((item, index) => {\n  const content = JSON.parse(item.json.message.content);\n  const original = originalItems[index] ? originalItems[index].json : {};\n  \n  return {\n    json: {\n      ...original, // Preserves: source, topic, link, platform, confidence\n      script_structure: content.video_script,\n      blog_content: content.blog_post,\n      generated_types: ['video', 'blog']\n    }\n  };\n});"
             },
             "name": "Parse Generation",
             "type": "n8n-nodes-base.code",
@@ -276,7 +276,7 @@
                         },
                         {
                             "fieldId": "source_url",
-                            "fieldValue": "={{ $('Analyze Relevance').item.json.link }}"
+                            "fieldValue": "={{ $json.link }}"
                         },
                         {
                             "fieldId": "status",
