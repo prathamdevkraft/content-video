@@ -8,6 +8,21 @@ import NewsFeed from './components/NewsFeed';
 import ScriptEditor from './components/ScriptEditor';
 import VideoPlayer from './components/VideoPlayer';
 import PerformanceDashboard from './components/PerformanceDashboard';
+import MobileButton from './components/MobileButton';
+
+const DesktopView = styled.div`
+  display: block;
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const MobileView = styled.div`
+  display: none;
+  @media (max-width: 768px) {
+    display: block;
+  }
+`;
 
 const AppWrapper = styled.div`
   min-height: 100vh;
@@ -84,6 +99,7 @@ const Card = styled.div`
   
   @media (max-width: 768px) {
     padding: 20px;
+    box-shadow: 6px 6px 0 #000000;
   }
   height: 100%;
 
@@ -428,10 +444,18 @@ function App() {
           <Title>Taxfix Admin</Title>
         </div>
         <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-          <NavigationButton
-            label={view === 'home' ? 'DASHBOARD' : 'HOME'}
-            onClick={() => setView(view === 'home' ? 'dashboard' : 'home')}
-          />
+          <DesktopView>
+            <NavigationButton
+              label={view === 'home' ? 'DASHBOARD' : 'HOME'}
+              onClick={() => setView(view === 'home' ? 'dashboard' : 'home')}
+            />
+          </DesktopView>
+          <MobileView>
+            <MobileButton
+              label={view === 'home' ? 'DASHBOARD' : 'HOME'}
+              onClick={() => setView(view === 'home' ? 'dashboard' : 'home')}
+            />
+          </MobileView>
           <StatusBadge>DEVKRAFT</StatusBadge>
         </div>
       </Header>
