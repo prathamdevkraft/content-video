@@ -69,6 +69,23 @@ const ChartCard = styled.div`
   box-shadow: 8px 8px 0 black;
   padding: 24px;
   height: 400px;
+  
+  @media (max-width: 768px) {
+    height: 500px; /* More space for legends on mobile */
+    padding: 16px;
+  }
+`;
+
+const BottomGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-bottom: 32px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
 `;
 
 const ChartTitle = styled.h3`
