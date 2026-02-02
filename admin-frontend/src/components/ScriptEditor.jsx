@@ -151,11 +151,13 @@ const ScriptEditor = ({ job, onApprove }) => {
 
     useEffect(() => {
         // Init Video
-        if (job?.script_content) {
+        // Check "script_structure" (DB Column) OR "script_content" (Frontend State)
+        const scriptData = job?.script_structure || job?.script_content;
+        if (scriptData) {
             setScript({
-                hook: job.script_content.hook || "",
-                body: job.script_content.body || "",
-                cta: job.script_content.cta || ""
+                hook: scriptData.hook || "",
+                body: scriptData.body || "",
+                cta: scriptData.cta || ""
             });
         }
         // Init Blog (Updated to handle potential missing field)
