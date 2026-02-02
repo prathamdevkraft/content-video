@@ -226,6 +226,7 @@ async def trigger_content_processor(req: ContentProcessorRequest):
     
     try:
         response = requests.post(N8N_WEBHOOK, json=req.dict())
+        print(f"DEBUG N8N RESPONSE: Code={response.status_code}, Body={response.text}")
         return {"status": "success", "n8n_response": response.text}
     except Exception as e:
         print(f"Error calling n8n: {e}")
