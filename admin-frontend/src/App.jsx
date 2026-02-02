@@ -432,7 +432,7 @@ function App() {
             label={view === 'home' ? 'DASHBOARD' : 'HOME'}
             onClick={() => setView(view === 'home' ? 'dashboard' : 'home')}
           />
-          <StatusBadge>V4.0 FACTORY</StatusBadge>
+          <StatusBadge>DEVKRAFT</StatusBadge>
         </div>
       </Header>
 
