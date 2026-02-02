@@ -227,7 +227,8 @@ async def trigger_content_processor(req: ContentProcessorRequest):
     to the n8n container to avoid CORS issues.
     """
     # Internal Docker Network URL
-    N8N_WEBHOOK = "http://taxfix-n8n-factory:5678/webhook/process-content"
+    # Updated to include Workflow ID (11) as per User verification
+    N8N_WEBHOOK = "http://taxfix-n8n-factory:5678/webhook/11/webhook/process-content"
     
     try:
         response = requests.post(N8N_WEBHOOK, json=req.dict())
