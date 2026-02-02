@@ -53,6 +53,10 @@ class PublishVideoRequest(BaseModel):
     id: int
     platforms: list[str] = ["TikTok", "Instagram"]
 
+class ContentProcessorRequest(BaseModel):
+    action: str
+    payload: dict
+
 
 @app.get("/health")
 def health_check():
@@ -209,6 +213,22 @@ async def publish_video(req: PublishVideoRequest):
         
         return {"status": "success", "message": "Publishing trigger sent."}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/trigger-content-processor")
+async def trigger_content_processor(req: ContentProcessorRequest):
+    """
+    Proxies the Content Processor requests (Translate, Regenerate, Metadata)
+    to the n8n container to avoid CORS issues.
+    """
+    # Internal Docker Network URL
+    N8N_WEBHOOK = "http://taxfix-n8n-factory:5678/webhook/process-content"
+    
+    try:
+        response = requests.post(N8N_WEBHOOK, json=req.dict())
+        return {"status": "success", "n8n_response": response.text}
+    except Exception as e:
+        print(f"Error calling n8n: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/analytics")

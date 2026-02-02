@@ -192,10 +192,12 @@ const ScriptEditor = ({ job, onApprove }) => {
     }, [job]);
 
     const handleAction = async (action) => {
-        // Call the new Taxfix_3 workflow
-        // In production, use axios or a service wrapper
+        // Call the Backend Proxy (which calls n8n)
+        // This avoids CORS issues
+        const API_BASE = "http://13.200.99.186:8020";
+
         try {
-            await fetch('https://n8n.taxfix.devkraft.in/webhook/process-content', {
+            await fetch(`${API_BASE}/trigger-content-processor`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -210,7 +212,7 @@ const ScriptEditor = ({ job, onApprove }) => {
                     }
                 })
             });
-            alert(`Action '${action}' triggered! Reload page in a few seconds.`);
+            alert(`Action '${action}' triggered! Please wait a moment for the update.`);
         } catch (e) {
             alert('Error triggering action: ' + e.message);
         }
