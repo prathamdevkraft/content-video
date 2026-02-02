@@ -56,6 +56,11 @@ const ChartGrid = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
   gap: 32px;
   margin-bottom: 32px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 `;
 
 const ChartCard = styled.div`
@@ -206,29 +211,31 @@ const PerformanceDashboard = () => {
                     </ResponsiveContainer>
                 </ChartCard>
 
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, overflowX: 'auto' }}>
                     <ChartCard style={{ overflowY: 'auto' }}>
                         <ChartTitle>Recent Audit Trail (Governance)</ChartTitle>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                            <thead>
-                                <tr style={{ borderBottom: '2px solid black' }}>
-                                    <th style={{ padding: '8px' }}>Time</th>
-                                    <th style={{ padding: '8px' }}>Action</th>
-                                    <th style={{ padding: '8px' }}>User</th>
-                                    <th style={{ padding: '8px' }}>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {[1, 2, 3, 4, 5].map(i => (
-                                    <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-                                        <td style={{ padding: '12px 8px' }}>10:{10 + i} AM</td>
-                                        <td style={{ padding: '12px 8px' }}>Approved Script #{1020 + i}</td>
-                                        <td style={{ padding: '12px 8px' }}>Reviewer_1</td>
-                                        <td style={{ padding: '12px 8px' }}><span style={{ background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>COMPLIANT</span></td>
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', minWidth: '500px', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '2px solid black' }}>
+                                        <th style={{ padding: '8px' }}>Time</th>
+                                        <th style={{ padding: '8px' }}>Action</th>
+                                        <th style={{ padding: '8px' }}>User</th>
+                                        <th style={{ padding: '8px' }}>Status</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {[1, 2, 3, 4, 5].map(i => (
+                                        <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                                            <td style={{ padding: '12px 8px' }}>10:{10 + i} AM</td>
+                                            <td style={{ padding: '12px 8px' }}>Approved Script #{1020 + i}</td>
+                                            <td style={{ padding: '12px 8px' }}>Reviewer_1</td>
+                                            <td style={{ padding: '12px 8px' }}><span style={{ background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>COMPLIANT</span></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </ChartCard>
                 </div>
             </div>

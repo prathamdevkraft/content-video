@@ -149,6 +149,11 @@ const ActionButton = styled.button`
     transform: none;
     box-shadow: 4px 4px 0 #000000;
   }
+
+  @media (max-width: 768px) {
+    padding: 12px;
+    font-size: 16px;
+  }
 `;
 
 const LogBox = styled.pre`
@@ -167,6 +172,7 @@ const LogBox = styled.pre`
 
 const Table = styled.table`
   width: 100%;
+  min-width: 600px; /* Force scroll on mobile */
   border-collapse: collapse;
   margin-top: 24px;
   background: white;
