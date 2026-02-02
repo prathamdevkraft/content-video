@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Check, AlertTriangle, PlayCircle, Save, FileText, Video } from 'lucide-react';
+import HoverButton from './HoverButton';
 
 const Container = styled.div`
   display: grid;
@@ -272,7 +273,7 @@ const ScriptEditor = ({ job, onApprove }) => {
                     {/* METADATA SECTION with Generator */}
                     <Title>Social Metadata</Title>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-                        <button onClick={() => handleAction('generate_metadata')} style={{ cursor: 'pointer', background: '#ddd', border: '1px solid black', padding: '4px 8px', fontSize: '12px', fontWeight: 'bold' }}>✨ Generate AI Metrics</button>
+                        <HoverButton onClick={() => handleAction('generate_metadata')}>✨ Generate AI Metrics</HoverButton>
                     </div>
 
                     <Label>Social Caption</Label>
@@ -304,7 +305,7 @@ const ScriptEditor = ({ job, onApprove }) => {
                     </div>
 
                     <div style={{ marginBottom: '16px', display: 'flex', gap: '12px' }}>
-                        <button onClick={() => handleAction('translate')} style={{ padding: '8px', cursor: 'pointer' }}>🌍 Auto-Translate to {language === 'de' ? 'English' : 'German'}</button>
+                        <HoverButton onClick={() => handleAction('translate')}>🌍 Auto-Translate to {language === 'de' ? 'English' : 'German'}</HoverButton>
                     </div>
 
                     <ToggleContainer>
@@ -342,7 +343,7 @@ const ScriptEditor = ({ job, onApprove }) => {
                         <>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <Label>Headline</Label>
-                                <button onClick={() => handleAction('regenerate_blog')} style={{ fontSize: '10px', marginBottom: '4px', cursor: 'pointer' }}>🔄 Regenerate from Script</button>
+                                <HoverButton onClick={() => handleAction('regenerate_blog')}>🔄 Regenerate from Script</HoverButton>
                             </div>
                             <TextArea
                                 value={currentBlog.title}
